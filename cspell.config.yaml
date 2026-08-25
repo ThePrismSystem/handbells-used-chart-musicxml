@@ -1,5 +1,5 @@
 version: "0.2"
-language: en
+language: en,en-GB
 words:
   - vitest
   - pnpm
@@ -26,6 +26,14 @@ words:
   - timewise
   - mxl
   - fflate
+  - barline
+  - barlines
+  - unpitched
+  - rootfile
+  - rootfiles
+  - xlink
+  - parsererror
+  - smbs
   - Dorico
   - handbell
   - handbells
@@ -42,6 +50,13 @@ words:
   - xmllint
   - dtds
   - Prism
+  - unparseable
+  - serialisers
+  - nosniff
+# Check only what CI checks. Without this, `pnpm spell` also scans the
+# git-ignored local-only files (docs/superpowers, .superpowers, CLAUDE.md),
+# so it fails locally while passing in CI — which trains people to ignore it.
+useGitignore: true
 ignorePaths:
   - node_modules
   - dist
