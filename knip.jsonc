@@ -1,0 +1,28 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["src/main.tsx", "vite.config.ts"],
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignoreDependencies": [
+    // Permanent: used by tests via the testing-library setup, not imported directly.
+    "@testing-library/user-event",
+
+    // TEMPORARY — installed ahead of the code that consumes them, so knip
+    // would otherwise report them unused. DELETE each entry when its
+    // consumer lands; leaving one here permanently blinds knip to that
+    // package going genuinely unused later.
+    //   fflate                  -> remove when src/musicxml/container.ts imports it
+    //   xmllint-wasm            -> remove when src/test-support/validate-musicxml.ts imports it
+    //   @axe-core/playwright    -> remove when test/a11y/ imports it
+    //   @playwright/test        -> remove when test/a11y/ imports it
+    //   axe-core                -> remove when vitest-axe wiring lands
+    //   eslint-plugin-jsx-a11y  -> remove when eslint.config.js registers it
+    //   vitest-axe              -> remove when src/test-setup.ts extends its matchers
+    "@axe-core/playwright",
+    "@playwright/test",
+    "axe-core",
+    "eslint-plugin-jsx-a11y",
+    "fflate",
+    "vitest-axe",
+    "xmllint-wasm",
+  ],
+}
