@@ -27,11 +27,20 @@ describe("optionalRuns", () => {
     expect(optionalRuns(built, bellRange(null, null))).toEqual([]);
   });
 
-  it("spans from the first optional column to the last, gaps included", () => {
+  it("starts at the first optional column, not the first column", () => {
     // A run is one bracket per staff, which is what published charts draw.
     const built = buildColumns([entry("D", 0, 7), entry("E", 0, 7), entry("F", 0, 7)]);
     expect(optionalRuns(built, bellRange(null, "D7"))).toEqual([
       { staff: "treble", firstColumn: 1, lastColumn: 2 },
+    ]);
+  });
+
+  it("keeps a required column inside the run when optional ones sit either side", () => {
+    // One bracket per staff: a required bell between two optional ones stays
+    // under the bracket. A contiguous-block scan would emit two runs here.
+    const built = buildColumns([entry("D", 0, 7), entry("E", 0, 7), entry("F", 0, 7)]);
+    expect(optionalRuns(built, bellRange("E7", "E7"))).toEqual([
+      { staff: "treble", firstColumn: 0, lastColumn: 2 },
     ]);
   });
 
