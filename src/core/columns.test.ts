@@ -28,7 +28,7 @@ describe("buildColumns", () => {
     // G#6 and Ab7 are different bells to a ringer, so they do not share a
     // column even though they are an octave apart in sound.
     const built = buildColumns([entry("G", 1, 6), entry("A", -1, 7)]);
-    expect(built.treble).toHaveLength(2);
+    expect(names(built.treble)).toEqual([["G#6"], ["Ab7"]]);
   });
 
   it("gives an orphan octave its own column, ordered as though its anchor existed", () => {
@@ -45,6 +45,11 @@ describe("buildColumns", () => {
   it("gives each bass staff bell its own column", () => {
     const built = buildColumns([entry("C", 0, 4), entry("E", 0, 4), entry("C", 0, 5)]);
     expect(names(built.bass)).toEqual([["C4"], ["E4"], ["C5"]]);
+  });
+
+  it("orders bass staff bells ascending whatever order they arrive in", () => {
+    const built = buildColumns([entry("E", 0, 4), entry("C", 0, 4)]);
+    expect(names(built.bass)).toEqual([["C4"], ["E4"]]);
   });
 
   it("sorts the notes within a column ascending", () => {

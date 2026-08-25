@@ -31,7 +31,9 @@ function anchorKey(midi: number, entry: ChartEntry): string {
 }
 
 function single(list: readonly ChartEntry[]): Column[] {
-  return list.map((entry) => [entry]);
+  // anchor() re-sorts its own output, so single() must too: otherwise the
+  // bass staff is the one region whose order depends on the caller.
+  return [...list].sort((a, b) => a.midi - b.midi).map((entry) => [entry]);
 }
 
 /**
