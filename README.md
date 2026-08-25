@@ -35,11 +35,8 @@ pnpm dev
 
 ## Contributing
 
-1. Create a feature branch
-2. Make your changes
-3. Ensure `pnpm typecheck && pnpm lint && pnpm test` pass
-4. Open a pull request
+This repository is published for transparency and is not accepting contributions.
 
 ## License
 
-[MIT](LICENSE)
+Proprietary — see [LICENSE](LICENSE). All rights reserved.
