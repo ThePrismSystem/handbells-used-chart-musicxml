@@ -5,8 +5,8 @@ export interface BellRange {
   readonly last: number | null;
 }
 
-function isEmpty(value: string | null | undefined): value is null | undefined {
-  return value === null || value === undefined || value.trim() === "";
+function isPresent(value: string | null | undefined): value is string {
+  return value !== null && value !== undefined && value.trim() !== "";
 }
 
 /**
@@ -19,8 +19,8 @@ export function bellRange(
   noun = "bell",
 ): BellRange {
   const range: BellRange = {
-    first: isEmpty(first) ? null : toMidi(parseName(first, noun)),
-    last: isEmpty(last) ? null : toMidi(parseName(last, noun)),
+    first: isPresent(first) ? toMidi(parseName(first, noun)) : null,
+    last: isPresent(last) ? toMidi(parseName(last, noun)) : null,
   };
   if (range.first !== null && range.last !== null && range.first > range.last) {
     throw new Error(
