@@ -33,6 +33,19 @@ pnpm dev
 | `pnpm test:coverage` | Run tests with coverage        |
 | `pnpm test:watch`    | Run tests in watch mode        |
 
+## Pinned dependencies
+
+Two packages are deliberately held below their latest release.
+
+- **`typescript` is pinned `~6.0.3`.** The tilde is load-bearing:
+  `typescript-eslint` declares a peer of `>=4.8.4 <6.1.0` and has no newer
+  major line, so `^6.0.3` would admit 6.1.0 and break the peer.
+- **`@types/node` tracks `.nvmrc`** (Node 24 Active LTS), not its own latest.
+  Typing against Node 26 APIs while running Node 24 produces code that compiles
+  and then fails at runtime.
+
+`renovate.json` enforces both.
+
 ## Contributing
 
 This repository is published for transparency and is not accepting contributions.
