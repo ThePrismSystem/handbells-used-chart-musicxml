@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.next/
+out/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+
+# Agent config (per-contributor)
+CLAUDE.md
+.claude/
+.superpowers/
+docs/superpowers/
+AGENTS.md
+
+# Temporary files
+.tmp/
+*.log
+*.patch
+
+# Reference material — third-party copyrighted scores, kept local only
+test/fixtures/private/

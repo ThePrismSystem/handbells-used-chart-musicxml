@@ -1,0 +1,52 @@
+version: "0.2"
+language: en
+words:
+  - vitest
+  - pnpm
+  - tsconfig
+  - commitlint
+  - cspell
+  - knip
+  - eslint
+  - prettier
+  - husky
+  - lcov
+  - nocheck
+  - noEmit
+  - jsdom
+  - typeof
+  - devcontainer
+  - automerge
+  - renovatebot
+  - codecov
+  - dependabot
+  - typecheck
+  - musicxml
+  - partwise
+  - timewise
+  - mxl
+  - fflate
+  - Dorico
+  - handbell
+  - handbells
+  - handchime
+  - handchimes
+  - notehead
+  - noteheads
+  - mscx
+  - mscz
+  - Sibelius
+  - MuseScore
+  - spatium
+  - Recordare
+  - xmllint
+  - dtds
+  - Prism
+ignorePaths:
+  - node_modules
+  - dist
+  - build
+  - coverage
+  - pnpm-lock.yaml
+  - "*.min.js"
+  - "*.min.css"
