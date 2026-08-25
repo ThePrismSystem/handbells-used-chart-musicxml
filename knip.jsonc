@@ -8,8 +8,9 @@
 
     // TEMPORARY — installed ahead of the code that consumes them, so knip
     // would otherwise report them unused. DELETE each entry when its
-    // consumer lands; leaving one here permanently blinds knip to that
-    // package going genuinely unused later.
+    // consumer lands, OR when that consumer is removed or abandoned before
+    // landing; leaving one here permanently blinds knip to that package
+    // going genuinely unused later.
     //   fflate                  -> remove when src/musicxml/container.ts imports it
     //   xmllint-wasm            -> remove when src/test-support/validate-musicxml.ts imports it
     //   @axe-core/playwright    -> remove when test/a11y/ imports it
