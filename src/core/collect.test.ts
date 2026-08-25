@@ -25,6 +25,11 @@ describe("collect", () => {
     expect(result.bells).toHaveLength(1);
     expect(result.chimes).toHaveLength(1);
     expect(result.smbs).toHaveLength(1);
+    // The region is the chart's whole layout decision: a wrong value here
+    // silently prints a bell in the wrong place. C5 is the top of the bass
+    // staff band, so this also pins the asymmetric C5/D5 boundary.
+    expect(result.bells[0]?.region).toBe("bassStaff");
+    expect(result.chimes[0]?.region).toBe("trebleStaff");
   });
 
   it("treats a square head as a silver melody bell", () => {
@@ -42,8 +47,11 @@ describe("collect", () => {
   });
 
   it("counts unmapped noteheads as ignored", () => {
-    const result = collect([bell("D", 0, 6, "triangle")], DEFAULT_HEAD_MAPPING);
-    expect(result.ignored).toBe(1);
+    const result = collect(
+      [bell("D", 0, 6, "triangle"), bell("E", 0, 6, "cross")],
+      DEFAULT_HEAD_MAPPING,
+    );
+    expect(result.ignored).toBe(2);
     expect(result.bells).toHaveLength(0);
   });
 
