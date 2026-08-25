@@ -1,6 +1,6 @@
 import type { ChartEntry, Region } from "./types.js";
 
-type Column = readonly ChartEntry[];
+export type Column = readonly ChartEntry[];
 
 export interface BuiltColumns {
   readonly treble: Column[];
