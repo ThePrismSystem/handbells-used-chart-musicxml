@@ -14,6 +14,7 @@ export default tseslint.config(
       "**/node_modules/**",
       "**/vite.config.ts",
       "**/test-setup.ts",
+      "**/coverage/**",
     ],
   },
   ...tseslint.configs.strictTypeChecked,
