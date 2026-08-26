@@ -29,6 +29,12 @@ const SOURCE = `<?xml version="1.0" encoding="UTF-8"?>
   </part>
 </score-partwise>`;
 
+/** SOURCE with a key signature, which SOURCE itself has none of. */
+const KEYED = SOURCE.replace(
+  "<attributes><divisions>2</divisions>",
+  "<attributes><divisions>2</divisions><key><fifths>2</fifths></key>",
+);
+
 const bell = (
   step: Pitch["step"],
   alter: Pitch["alter"],
@@ -91,6 +97,16 @@ describe("emitChart", () => {
     const name = doc.querySelector("part-list > score-part > part-name");
     expect(name?.textContent).toBe("Handbells Used Chart");
     expect(name?.getAttribute("print-object")).toBe("no");
+  });
+
+  it("names each chart part for its own instrument", () => {
+    // Dorico prints part-name as the staff label whatever print-object says.
+    // One shared name leaves it labelling the chimes "Handbells Used Chart 2".
+    const { doc } = emitted([bell("C", 0, 5), bell("D", 0, 6, "diamond")]);
+    const names = [...doc.querySelectorAll("part-list > score-part > part-name")].map(
+      (name) => name.textContent,
+    );
+    expect(names).toEqual(["Handbells Used Chart", "Handchimes Used Chart", "Piano"]);
   });
 
   it("gives one measure to every part, chart and music alike", () => {
@@ -193,7 +209,9 @@ describe("emitChart", () => {
   });
 
   it("hides the chart staves from the first measure of the music", () => {
-    const { doc } = emitted([bell("C", 0, 5)]);
+    // Not the Dorico profile's behaviour any more, but still a profile flag:
+    // an application that honours the hint gets it.
+    const { doc } = emitted([bell("C", 0, 5)], { ...DORICO, hideChartStavesAfterChart: true });
     const music = doc.querySelectorAll('part[id="HBC1"] > measure')[1];
     expect(music?.querySelector("staff-details")?.getAttribute("print-object")).toBe("no");
   });
@@ -221,8 +239,8 @@ describe("emitChart", () => {
       bell("D", 0, 6, "diamond"),
     ]);
     expect(await validateMusicXml(xml)).toEqual([]);
-    const chime = doc.querySelector('part[id="HBC2"] > measure');
-    expect(chime?.querySelectorAll("note")).toHaveLength(6);
+    // Three columns on two staves: the chime's own one bell and five rests.
+    expect(doc.querySelectorAll('part[id="HBC2"] > measure[implicit] note')).toHaveLength(6);
   });
 
   it("puts each column in its own measure under columnsPerMeasure 1", async () => {
@@ -304,14 +322,10 @@ describe("emitChart", () => {
     expect(doc.querySelector('part[id="HBC1"] staff-size')).toBeNull();
   });
 
-  it("omits the hidden chart staves when the profile says not to hide them", async () => {
-    // The Dorico verification gate may flip this flag if Dorico ignores
-    // <staff-details print-object="no">, so the false path has to work before
-    // anyone reaches for it.
-    const { doc, xml } = emitted([bell("C", 0, 5)], {
-      ...DORICO,
-      hideChartStavesAfterChart: false,
-    });
+  it("omits the hidden chart staves for Dorico, which ignores the hint", async () => {
+    // The Dorico gate found the staves still drawn and empty after the chart,
+    // so the profile no longer emits <staff-details print-object="no"> there.
+    const { doc, xml } = emitted([bell("C", 0, 5)]);
     expect(await validateMusicXml(xml)).toEqual([]);
     const music = doc.querySelectorAll('part[id="HBC1"] > measure')[1];
     expect(music?.querySelector("staff-details")).toBeNull();
@@ -416,5 +430,107 @@ describe("the chart part's silent tail", () => {
     );
     expect(durations).toEqual(["8", "6"]);
     expect(await validateMusicXml(serializeScore(parsed))).toEqual([]);
+  });
+});
+
+describe("the music part's silent prefix", () => {
+  const prefixOf = (doc: Document, partId: string): Element | null =>
+    doc.querySelector(`part[id="${partId}"] > measure`);
+
+  it("carries the part's own key and clef", async () => {
+    // The prefix now opens the part, so it has to establish what the part's
+    // first bar used to. Without a <key> a reader takes the piece as opening
+    // atonal and prints a key change at the first real bar — invisible in C
+    // major, a spurious signature change in every other key.
+    const parsed = parseScore(KEYED);
+    emitChart(parsed.doc, planFor([bell("C", 0, 5)]), DORICO);
+    expect(await validateMusicXml(serializeScore(parsed))).toEqual([]);
+
+    const attributes = prefixOf(parsed.doc, "P1")?.querySelector(":scope > attributes");
+    expect(attributes?.querySelector("key > fifths")?.textContent).toBe("2");
+    expect(attributes?.querySelector("clef > sign")?.textContent).toBe("G");
+  });
+
+  it("keeps the chart's own metre rather than the music's", () => {
+    // Everything else on the prefix is the part's; the time signature is the
+    // one thing that must not be, since the prefix is as long as the chart.
+    const parsed = parseScore(KEYED);
+    emitChart(parsed.doc, planFor([bell("C", 0, 5)]), DORICO);
+
+    const time = prefixOf(parsed.doc, "P1")?.querySelector(":scope > attributes > time");
+    expect(time?.querySelector("beats")?.textContent).toBe("1");
+    expect(time?.getAttribute("print-object")).toBe("no");
+  });
+
+  it("puts the metre in schema order on a part that declares none", async () => {
+    // <time> is optional. With none to replace, the prefix's own has to be
+    // inserted where the schema puts it — after <key>, before <clef> — or the
+    // document no longer validates.
+    const parsed = parseScore(
+      KEYED.replace("<time><beats>4</beats><beat-type>4</beat-type></time>", ""),
+    );
+    emitChart(parsed.doc, planFor([bell("C", 0, 5)]), DORICO);
+    expect(await validateMusicXml(serializeScore(parsed))).toEqual([]);
+
+    const attributes = prefixOf(parsed.doc, "P1")?.querySelector(":scope > attributes");
+    expect([...(attributes?.children ?? [])].map((child) => child.nodeName)).toEqual([
+      "divisions",
+      "key",
+      "time",
+      "clef",
+    ]);
+  });
+
+  it("measures the prefix rest in the part's own divisions", async () => {
+    // Divisions are per-part in MusicXML. The prefix declares the part's, so
+    // its rest has to be counted in them: taking the first part's leaves every
+    // other part's prefix the wrong length.
+    const parsed = parseScore(
+      SOURCE.replace(
+        "</part>\n</score-partwise>",
+        "</part>\n" +
+          '  <part id="P2">\n' +
+          '    <measure number="1"><attributes><divisions>8</divisions>' +
+          "<time><beats>4</beats><beat-type>4</beat-type></time>" +
+          "<clef><sign>F</sign><line>4</line></clef></attributes>" +
+          "<note><rest/><duration>32</duration></note></measure>\n" +
+          '    <measure number="2"><note><rest/><duration>32</duration></note></measure>\n' +
+          "  </part>\n</score-partwise>",
+      ).replace(
+        '<score-part id="P1"><part-name>Piano</part-name></score-part>',
+        '<score-part id="P1"><part-name>Piano</part-name></score-part>' +
+          '<score-part id="P2"><part-name>Cello</part-name></score-part>',
+      ),
+    );
+    emitChart(parsed.doc, planFor([bell("C", 0, 5)]), DORICO);
+    expect(await validateMusicXml(serializeScore(parsed))).toEqual([]);
+
+    // One column, so one quarter: 2 divisions in P1 and 8 in P2.
+    expect(prefixOf(parsed.doc, "P1")?.querySelector("note > duration")?.textContent).toBe("2");
+    expect(prefixOf(parsed.doc, "P2")?.querySelector("note > duration")?.textContent).toBe("8");
+  });
+
+  it("still declares a metre on a part whose first measure has no attributes", async () => {
+    // A part may open with none at all. It still needs the prefix metre, and
+    // the rest still has to be counted in the divisions the score declares.
+    const parsed = parseScore(
+      SOURCE.replace(
+        "</part>\n</score-partwise>",
+        '</part>\n  <part id="P2"><measure number="1">' +
+          "<note><rest/><duration>8</duration></note></measure>" +
+          '<measure number="2"><note><rest/><duration>8</duration></note></measure>' +
+          "</part>\n</score-partwise>",
+      ).replace(
+        '<score-part id="P1"><part-name>Piano</part-name></score-part>',
+        '<score-part id="P1"><part-name>Piano</part-name></score-part>' +
+          '<score-part id="P2"><part-name>Cello</part-name></score-part>',
+      ),
+    );
+    emitChart(parsed.doc, planFor([bell("C", 0, 5)]), DORICO);
+    expect(await validateMusicXml(serializeScore(parsed))).toEqual([]);
+
+    const prefix = prefixOf(parsed.doc, "P2");
+    expect(prefix?.querySelector("attributes > time > beats")?.textContent).toBe("1");
+    expect(prefix?.querySelector("note > duration")?.textContent).toBe("2");
   });
 });

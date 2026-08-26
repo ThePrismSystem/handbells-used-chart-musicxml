@@ -32,11 +32,12 @@ describe("the whole pipeline", () => {
 
   it("charts a flat and its natural as two separate bells", async () => {
     // The pair an arranger most needs to trust: Eb and E are different bells,
-    // and a chart that merged them or printed a cautionary natural on the E
-    // would misreport what the piece requires. MusicXML's <accidental> has no
+    // and a chart that merged them or printed a natural on the E would
+    // misreport what the piece requires. MusicXML's <accidental> has no
     // print-object, so the natural is emitted as no element at all rather than
-    // as a hidden one — whether a reader then derives one is what the manual
-    // Dorico gate checks.
+    // as a hidden one. The Dorico gate found that Dorico supplies its own
+    // natural to cancel an accidental earlier in the same bar, which is why
+    // the Dorico profile now gives each column a bar of its own.
     const parsed = parseScore(accidentals);
     const read = readScore(parsed.doc);
     const plan = planFor(read, options(read));
@@ -50,11 +51,16 @@ describe("the whole pipeline", () => {
       "B6",
     ]);
 
+    // One column per bar interleaves the staves in document order, so the
+    // treble bells are picked out by staff rather than by position.
     const chartPart = parseScore(xml).doc.querySelector("score-partwise > part");
     const emitted = [...(chartPart?.querySelectorAll("note") ?? [])]
-      .filter((note) => note.querySelector("pitch") !== null)
+      .filter(
+        (note) =>
+          note.querySelector("pitch") !== null && note.querySelector("staff")?.textContent === "1",
+      )
       .map((note) => note.querySelector("accidental")?.textContent ?? null);
-    expect(emitted.slice(0, 4)).toEqual(["flat", null, "flat", null]);
+    expect(emitted).toEqual(["flat", null, "flat", null]);
   });
 
   it("does not mutate the parsed document", () => {
@@ -82,7 +88,12 @@ describe("the whole pipeline", () => {
 
     expect(await validateMusicXml(twice)).toEqual([]);
     expect(final.doc.querySelectorAll("score-partwise > part")).toHaveLength(3);
-    expect(final.doc.querySelectorAll('part[id="P1"] > measure')).toHaveLength(2);
+    // The same shape as one run, not one run plus a second chart's worth of
+    // measures. Counting against `once` keeps this independent of how many
+    // bars the target's profile spreads the chart over.
+    expect(final.doc.querySelectorAll('part[id="P1"] > measure')).toHaveLength(
+      parseScore(once).doc.querySelectorAll('part[id="P1"] > measure').length,
+    );
   });
 
   it("reads the same chart back to the same plan", () => {

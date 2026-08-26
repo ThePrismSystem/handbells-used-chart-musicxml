@@ -68,6 +68,23 @@ describe("findChart", () => {
     expect(findChart(doc)).toEqual({ partIds: ["HBC1"], measures: 1, printParts: [] });
   });
 
+  it("recognises a chart part named for chimes or silver melody bells", () => {
+    // Each chart part is named for its own instrument, so Dorico — which
+    // prints part-name whatever print-object says — labels the chimes staff
+    // "Handchimes Used Chart" instead of "Handbells Used Chart 2". All three
+    // names are markers; matching only the handbell one loses the other two.
+    const doc = parseScore(
+      score(
+        '<score-part id="HBC1"><part-name>Handchimes Used Chart</part-name></score-part>' +
+          '<score-part id="HBC2"><part-name>Silver Melody Bells Used Chart</part-name></score-part>' +
+          '<score-part id="P1"><part-name>Piano</part-name></score-part>',
+        `<part id="HBC1">${measure("0")}</part><part id="HBC2">${measure("0")}</part>` +
+          `<part id="P1">${measure("0")}${measure("1")}</part>`,
+      ),
+    ).doc;
+    expect(findChart(doc)?.partIds).toEqual(["HBC1", "HBC2"]);
+  });
+
   it("recovers a multi-measure chart's extent from its implicit measures", () => {
     // Marker fields gone, part name surviving. The chart's own measures are
     // implicit; its tail is not. Without this the chart's second measure is

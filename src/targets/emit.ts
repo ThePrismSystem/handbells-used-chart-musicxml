@@ -53,8 +53,9 @@ function uniqueId(doc: Document, index: number): string {
 function scorePartFor(doc: Document, id: string, section: ChartSection): Element {
   const scorePart = el(doc, "score-part", undefined, { id });
   // The chart's visible label is a direction above the staves, not a margin
-  // name, so the part name is suppressed while staying available as a marker.
-  scorePart.append(el(doc, "part-name", CHART_PART_NAME, { "print-object": "no" }));
+  // name, so the part name is marked not to print. Dorico prints it anyway,
+  // which is why each kind's name is its own rather than one shared marker.
+  scorePart.append(el(doc, "part-name", CHART_PART_NAME[section.kind], { "print-object": "no" }));
 
   const instrument = el(doc, "score-instrument", undefined, { id: `${id}-I1` });
   instrument.append(el(doc, "instrument-name", INSTRUMENT_NAME[section.kind]));
@@ -242,6 +243,39 @@ function chartMeasure(
   return measure;
 }
 
+/**
+ * The part's own opening attributes, cloned onto the silent measure that now
+ * precedes them, with only <time> replaced by the chart's metre. The prefix
+ * opens the part, so it has to establish what the part's first bar used to:
+ * without a <key> a reader takes the piece as opening atonal and prints a key
+ * change at the first real bar.
+ */
+function prefixAttributes(doc: Document, opening: Element | null, count: number): Element {
+  const attributes =
+    opening === null ? el(doc, "attributes") : (opening.cloneNode(true) as Element);
+
+  const time = el(doc, "time", undefined, { "print-object": "no" });
+  time.append(el(doc, "beats", String(count)));
+  time.append(el(doc, "beat-type", BEAT_TYPE));
+
+  const existing = attributes.querySelector(":scope > time");
+  if (existing === null) {
+    // Schema order is divisions, key, time, staves, part-symbol, instruments,
+    // clef, staff-details, transpose. With no <time> to replace, the new one
+    // goes ahead of the first element the schema puts after it.
+    attributes.insertBefore(
+      time,
+      attributes.querySelector(
+        ":scope > staves, :scope > part-symbol, :scope > instruments, :scope > clef," +
+          " :scope > staff-details, :scope > transpose",
+      ),
+    );
+  } else {
+    existing.replaceWith(time);
+  }
+  return attributes;
+}
+
 /** A silent, invisible measure that keeps a part in step with the chart. */
 function silentMeasure(
   doc: Document,
@@ -249,6 +283,7 @@ function silentMeasure(
   index: number,
   count: number,
   divisions: number,
+  opening: Element | null,
 ): Element {
   const measure = el(doc, "measure", undefined, {
     number:
@@ -259,12 +294,7 @@ function silentMeasure(
   });
 
   if (index === 0) {
-    const attributes = el(doc, "attributes");
-    const time = el(doc, "time", undefined, { "print-object": "no" });
-    time.append(el(doc, "beats", String(count)));
-    time.append(el(doc, "beat-type", BEAT_TYPE));
-    attributes.append(time);
-    measure.append(attributes);
+    measure.append(prefixAttributes(doc, opening, count));
   }
 
   const note = el(doc, "note", undefined, { "print-object": "no" });
@@ -425,10 +455,17 @@ export function emitChart(doc: Document, plan: ChartPlan, profile: TargetProfile
 
   const printParts: string[] = [];
   for (const part of musicParts) {
+    // Divisions are per-part in MusicXML, and the prefix declares this part's
+    // along with the rest of its opening attributes, so its rest is counted in
+    // them rather than in the first part's.
+    const opening = part.querySelector(":scope > measure > attributes");
+    const declared = Number(opening?.querySelector(":scope > divisions")?.textContent);
+    const partDivisions = declared > 0 ? declared : divisions;
+
     for (let index = measureCount - 1; index >= 0; index--) {
       const from = index * perMeasure;
       const count = Math.min(perMeasure, width - from);
-      part.prepend(silentMeasure(doc, profile, index, count, divisions));
+      part.prepend(silentMeasure(doc, profile, index, count, partDivisions, opening));
     }
 
     if (profile.systemBreakAfterChart) {

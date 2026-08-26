@@ -1,7 +1,24 @@
-// CHART_PART_NAME is exported for targets/emit.ts, its only importer. The three
-// field names below stay private: they are used only in this file, and an export
-// with no consumer fails knip.
-export const CHART_PART_NAME = "Handbells Used Chart";
+import type { ChartKind } from "../core/types.js";
+
+/**
+ * A chart part's name is both its printed staff label and the marker that
+ * survives a round trip through another application. Dorico prints part-name
+ * whatever print-object says, so each kind carries its own name rather than
+ * one shared string — otherwise Dorico labels the chimes chart "Handbells Used
+ * Chart 2". Exported for targets/emit.ts, its only importer.
+ */
+export const CHART_PART_NAME: Record<ChartKind, string> = {
+  bells: "Handbells Used Chart",
+  chimes: "Handchimes Used Chart",
+  smbs: "Silver Melody Bells Used Chart",
+};
+
+// All three are markers. A score charted before the names diverged calls every
+// chart part the handbell one, and must still be recognised.
+const CHART_PART_NAMES: readonly string[] = Object.values(CHART_PART_NAME);
+
+// The three field names below stay private: they are used only in this file,
+// and an export with no consumer fails knip.
 const MISC_PARTS = "handbellChartParts";
 const MISC_MEASURES = "handbellChartMeasures";
 const MISC_PRINT_PARTS = "handbellChartPrintParts";
@@ -38,7 +55,7 @@ function namedChartPartIds(doc: Document): string[] {
   for (const scorePart of doc.querySelectorAll("part-list > score-part")) {
     const name = scorePart.querySelector("part-name")?.textContent.trim();
     const id = scorePart.getAttribute("id");
-    if (name === CHART_PART_NAME && id !== null) {
+    if (name !== undefined && CHART_PART_NAMES.includes(name) && id !== null) {
       ids.push(id);
     }
   }

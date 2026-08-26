@@ -65,10 +65,13 @@ is shown rather than assumed.
 
 ## Known limitations
 
-- **Hidden chart staves depend on the importing application.**
+- **Dorico draws the chart staves on after the chart, empty.**
   `<staff-details print-object="no">` is documented for exactly this purpose, but
-  honouring it is the importer's choice. Where an application ignores it, turn on
-  that application's own hide-empty-staves setting.
+  honouring it is the importer's choice and Dorico does not. The Dorico target no
+  longer emits it; turn on Dorico's own Hide Empty Staves setting (Layout Options
+  → Vertical Spacing → Staff Visibility) to take the empty staves off the page.
+  The Generic MusicXML target still emits the hint, for applications that honour
+  it.
 - **A chart round-tripped through another application may lose its markers.** The
   chart is marked with a `<miscellaneous-field>` and a part name. If an
   application drops both on re-export, a re-run will not recognise the existing

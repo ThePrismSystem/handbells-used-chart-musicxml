@@ -11,12 +11,18 @@ describe("profiles", () => {
     expect(new Set(TARGETS.map((t) => t.id)).size).toBe(TARGETS.length);
   });
 
-  it("starts Dorico on the one-measure, clef-only settings", () => {
-    // These are the defaults going in; the manual Dorico gate confirms or
-    // flips each one.
-    expect(DORICO.columnsPerMeasure).toBe("all");
+  it("carries the two settings the Dorico gate measured", () => {
+    // Measured against Dorico, not chosen. With a whole chart in one bar
+    // Dorico prints its own naturals to cancel accidentals earlier in that
+    // bar, and it draws the chart staves on after the chart whatever
+    // <staff-details print-object="no"> asks for.
+    expect(DORICO.columnsPerMeasure).toBe(1);
+    expect(DORICO.hideChartStavesAfterChart).toBe(false);
+  });
+
+  it("leaves the settings the gate did not settle where they started", () => {
     expect(DORICO.octaveVia).toBe("clef");
-    expect(DORICO.hideChartStavesAfterChart).toBe(true);
+    expect(DORICO.chartStaffSizePercent).toBe(80);
   });
 
   it("keeps the generic target free of application-specific hints", () => {
