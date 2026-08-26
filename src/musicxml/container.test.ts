@@ -59,6 +59,32 @@ describe("loadFile", () => {
     expect(() => loadFile(bytes, "broken.mxl")).toThrow(ScoreParseError);
     expect(() => loadFile(bytes, "broken.mxl")).toThrow(/which is not in this file/);
   });
+
+  it("refuses an .mxl whose container.xml is not valid XML", () => {
+    const bytes = zipSync({
+      mimetype: [strToU8(MIMETYPE), { level: 0 }],
+      "META-INF/container.xml": strToU8("<container><oops></container>"),
+    });
+    expect(() => loadFile(bytes, "broken.mxl")).toThrow(/is not valid XML/);
+  });
+
+  it("refuses an .mxl whose container.xml names no usable rootfile", () => {
+    // The guard is `path === null || path === undefined || path === ""`, and
+    // these three containers hit those three arms in order: an absent
+    // full-path attribute gives null, no rootfile element at all gives
+    // undefined, and an empty attribute gives "".
+    for (const container of [
+      "<container><rootfiles><rootfile/></rootfiles></container>",
+      "<container><rootfiles/></container>",
+      '<container><rootfiles><rootfile full-path=""/></rootfiles></container>',
+    ]) {
+      const bytes = zipSync({
+        mimetype: [strToU8(MIMETYPE), { level: 0 }],
+        "META-INF/container.xml": strToU8(container),
+      });
+      expect(() => loadFile(bytes, "broken.mxl")).toThrow(/names no rootfile/);
+    }
+  });
 });
 
 describe("saveFile", () => {
