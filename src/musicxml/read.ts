@@ -31,12 +31,8 @@ function text(parent: Element, selector: string): string | null {
   return parent.querySelector(selector)?.textContent.trim() ?? null;
 }
 
-function readPitch(note: Element): Pitch | null {
-  const pitch = note.querySelector(":scope > pitch");
-  if (pitch === null) {
-    return null;
-  }
-
+/** Takes the <pitch> element itself: the caller has already found it. */
+function readPitch(pitch: Element): Pitch | null {
   const step = text(pitch, ":scope > step");
   const rawOctave = text(pitch, ":scope > octave");
   const octave = Number(rawOctave);
@@ -90,11 +86,12 @@ export function readScore(doc: Document): ReadResult {
       if (note.querySelector(":scope > rest") !== null) {
         continue;
       }
-      if (note.querySelector(":scope > pitch") === null) {
+      const pitchElement = note.querySelector(":scope > pitch");
+      if (pitchElement === null) {
         continue;
       }
 
-      const pitch = readPitch(note);
+      const pitch = readPitch(pitchElement);
       if (pitch === null) {
         unreadable++;
         continue;

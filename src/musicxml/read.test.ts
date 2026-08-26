@@ -149,6 +149,19 @@ describe("readScore", () => {
     expect(part?.reason).toContain("no signal");
   });
 
+  it("reads a score-part that carries no part-name", () => {
+    // The milder sibling of the case above: the score-part exists but the
+    // schema-required <part-name> is missing. Reading an unnamed part as ""
+    // keeps the file open; the part simply falls to the no-signal default.
+    const doc = build(
+      '<score-part id="P1"/>',
+      `<part id="P1"><measure number="1">${note("C", "4")}</measure></part>`,
+    );
+    const [part] = readScore(doc).parts;
+    expect(part?.name).toBe("");
+    expect(part?.noteCount).toBe(1);
+  });
+
   it("returns empty results for a score with no parts", () => {
     const doc = build("", "");
     expect(readScore(doc)).toMatchObject({ parts: [], notes: [], unreadable: 0 });
