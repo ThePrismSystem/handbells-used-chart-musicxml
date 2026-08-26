@@ -11,7 +11,6 @@
     // consumer lands, OR when that consumer is removed or abandoned before
     // landing; leaving one here permanently blinds knip to that package
     // going genuinely unused later.
-    //   fflate                  -> remove when src/musicxml/container.ts imports it
     //   xmllint-wasm            -> remove when src/test-support/validate-musicxml.ts imports it
     //   @axe-core/playwright    -> remove when test/a11y/ imports it
     //   @playwright/test        -> remove when test/a11y/ imports it
@@ -22,7 +21,6 @@
     "@playwright/test",
     "axe-core",
     "eslint-plugin-jsx-a11y",
-    "fflate",
     "vitest-axe",
     "xmllint-wasm",
   ],
