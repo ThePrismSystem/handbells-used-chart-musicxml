@@ -42,26 +42,39 @@ test("every control is reachable by keyboard", async ({ page }) => {
     const elements = [...document.querySelectorAll(selector)].filter(
       (element) => !element.hasAttribute("disabled") && element.getAttribute("tabindex") !== "-1",
     );
-    // A native radio group shares one Tab stop — arrow keys move within it —
-    // so counting each radio individually overstates how many Tab presses
-    // it takes to reach every control.
-    const seenRadioGroups = new Set<string>();
-    return elements.filter((element) => {
-      if (element instanceof HTMLInputElement && element.type === "radio") {
-        if (seenRadioGroups.has(element.name)) {
-          return false;
-        }
-        seenRadioGroups.add(element.name);
-      }
-      return true;
-    }).length;
+    // Stamp each control with the Tab stop it belongs to, so focus can be
+    // identified afterwards by stop rather than by tag — several controls here
+    // share a tag, and tags cannot tell two of them apart.
+    //
+    // A native radio group is ONE stop: arrow keys move within it, and the
+    // member that receives focus is whichever is checked. So every radio in a
+    // group gets the same stop id, and the assertion holds whichever member
+    // the browser lands on.
+    const stopIds = new Map<string, string>();
+    for (const element of elements) {
+      const key =
+        element instanceof HTMLInputElement && element.type === "radio"
+          ? `radio:${element.name}`
+          : `control:${String(stopIds.size)}`;
+      const id = stopIds.get(key) ?? String(stopIds.size);
+      stopIds.set(key, id);
+      element.setAttribute("data-a11y-stop", id);
+    }
+    return stopIds.size;
   });
   expect(reachable).toBeGreaterThan(0);
 
-  const focused: string[] = [];
+  const focused: (string | null)[] = [];
   for (let index = 0; index < reachable; index++) {
     await page.keyboard.press("Tab");
-    focused.push(await page.evaluate(() => document.activeElement?.tagName ?? ""));
+    focused.push(
+      await page.evaluate(() => document.activeElement?.getAttribute("data-a11y-stop") ?? null),
+    );
   }
-  expect(focused.filter((tag) => tag !== "BODY").length).toBe(reachable);
+
+  // Every press must land on a stamped control...
+  expect(focused.every((id) => id !== null)).toBe(true);
+  // ...and on a DIFFERENT one each time. Without this, focus pinned to a single
+  // input would satisfy the test completely while reaching nothing else.
+  expect(new Set(focused).size).toBe(reachable);
 });
