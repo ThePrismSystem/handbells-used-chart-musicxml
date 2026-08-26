@@ -7,7 +7,7 @@ import { parseScore, serializeScore } from "../musicxml/document.js";
 import { validateMusicXml } from "../test-support/validate-musicxml.js";
 
 import { emitChart } from "./emit.js";
-import { DORICO } from "./profiles.js";
+import { DORICO, GENERIC } from "./profiles.js";
 
 import type { ChartPlan } from "../core/plan.js";
 import type { BellRecord, Pitch } from "../core/types.js";
@@ -261,5 +261,49 @@ describe("emitChart", () => {
       },
     });
     expect(calls).toEqual([{ parts: 2, sections: 1 }]);
+  });
+
+  it("emits a schema-valid chart for the generic target", async () => {
+    // GENERIC is a target the user can pick, and it is the only profile with
+    // chartStaffSizePercent null — the arm that omits <staff-details> entirely.
+    // Every other test here runs DORICO, so without this nothing ever emits
+    // the generic target at all, let alone validates it.
+    const { doc, xml } = emitted([bell("C", 0, 5), bell("D", 0, 6, "diamond")], GENERIC);
+    expect(await validateMusicXml(xml)).toEqual([]);
+    expect(doc.querySelector('part[id="HBC1"] staff-size')).toBeNull();
+  });
+
+  it("omits the hidden chart staves when the profile says not to hide them", async () => {
+    // The Dorico verification gate may flip this flag if Dorico ignores
+    // <staff-details print-object="no">, so the false path has to work before
+    // anyone reaches for it.
+    const { doc, xml } = emitted([bell("C", 0, 5)], {
+      ...DORICO,
+      hideChartStavesAfterChart: false,
+    });
+    expect(await validateMusicXml(xml)).toEqual([]);
+    const music = doc.querySelectorAll('part[id="HBC1"] > measure')[1];
+    expect(music?.querySelector("staff-details")).toBeNull();
+  });
+
+  it("picks a fresh id when the score already uses the chart's", async () => {
+    // MusicXML types part ids as xs:ID, which must be unique across the
+    // document, so a collision produces a score no application can open. A
+    // score can legitimately already contain an HBC1 — a previous chart whose
+    // part-name was edited, so removeChart no longer recognises it.
+    const parsed = parseScore(
+      SOURCE.replace(
+        '<score-part id="P1">',
+        '<score-part id="HBC1"><part-name>Bells</part-name></score-part><score-part id="P1">',
+      ).replace('<part id="P1">', '<part id="HBC1"><measure number="1"/></part><part id="P1">'),
+    );
+    const chart = emitChart(parsed.doc, planFor([bell("C", 0, 5)]), DORICO);
+
+    expect(chart.partIds).not.toContain("HBC1");
+    const ids = [...parsed.doc.querySelectorAll("part-list > score-part")].map((p) =>
+      p.getAttribute("id"),
+    );
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(await validateMusicXml(serializeScore(parsed))).toEqual([]);
   });
 });
