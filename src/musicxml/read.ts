@@ -4,8 +4,9 @@ import { findChart } from "./marker.js";
 import type { ExistingChart } from "./marker.js";
 import type { Alter, OctaveConvention, Pitch, RawNote, Step } from "../core/types.js";
 
-/** @public — a consumer for this shape lands with the UI's mapping panel. */
-export interface PartInfo {
+// Not exported until Task 22's PartsPanel imports it: knip fails an export
+// nothing imports, and a @public tag would silence that check permanently.
+interface PartInfo {
   readonly id: string;
   readonly name: string;
   readonly convention: OctaveConvention;
