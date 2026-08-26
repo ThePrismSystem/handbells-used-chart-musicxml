@@ -55,24 +55,32 @@ export function Summary({ plan, hasExistingChart, unreadable }: SummaryProps) {
       {plan.sections.length === 0 ? (
         <p>There is nothing to chart.</p>
       ) : (
-        plan.sections.map((section) => (
-          <article key={section.kind} className="section">
-            <h3>{section.label}</h3>
-            <p className="index mono">
-              {chartOrder(section).map((entry, index) => (
-                <Fragment key={entry.name}>
-                  {index > 0 && <span className="dot"> · </span>}
-                  <span
-                    className="name"
-                    style={section.color === null ? undefined : { color: section.color }}
-                  >
-                    {entry.name}
-                  </span>
-                </Fragment>
-              ))}
-            </p>
-          </article>
-        ))
+        plan.sections.map((section) => {
+          const entries = chartOrder(section);
+          return (
+            <article key={section.kind} className="section">
+              <h3>{section.label}</h3>
+              <p className="index mono">
+                {entries.map((entry, index) => (
+                  <Fragment key={entry.name}>
+                    {/* Name and its trailing separator are one unbreakable unit, so
+                        a wrap can never leave a mid-dot orphaned at a line start. */}
+                    <span className="entry">
+                      <span
+                        className="name"
+                        style={section.color === null ? undefined : { color: section.color }}
+                      >
+                        {entry.name}
+                      </span>
+                      {index < entries.length - 1 && <span className="dot"> ·</span>}
+                    </span>
+                    {index < entries.length - 1 && " "}
+                  </Fragment>
+                ))}
+              </p>
+            </article>
+          );
+        })
       )}
 
       {messages.length > 0 && (

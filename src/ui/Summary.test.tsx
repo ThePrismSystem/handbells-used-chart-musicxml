@@ -34,6 +34,40 @@ describe("Summary", () => {
     expect(container.textContent).toMatch(/C5.*G#5/s);
   });
 
+  it("keeps every separator in the same unbreakable unit as the name before it", () => {
+    const plan = buildPlan([bell("C", 0, 5), bell("G", 1, 5), bell("E", 0, 6)], {
+      headMapping: DEFAULT_HEAD_MAPPING,
+    });
+    const { container } = render(<Summary plan={plan} hasExistingChart={false} unreadable={0} />);
+
+    // jsdom does no layout, so the wrap itself cannot be observed. What can be
+    // observed is the structure that makes the wrap correct: a separator that
+    // is a sibling of the name it follows, inside the unit CSS marks nowrap.
+    // A separator rendered between units instead would let a line begin with
+    // an orphaned mid-dot, which is what this guards.
+    const dots = [...container.querySelectorAll(".dot")];
+    expect(dots).toHaveLength(2);
+    for (const dot of dots) {
+      const unit = dot.parentElement;
+      expect(unit).toHaveClass("entry");
+      expect(unit?.querySelector(".name")?.textContent).toBe(
+        dot.previousElementSibling?.textContent,
+      );
+    }
+  });
+
+  it("puts no separator after the last bell", () => {
+    const plan = buildPlan([bell("C", 0, 5), bell("G", 1, 5)], {
+      headMapping: DEFAULT_HEAD_MAPPING,
+    });
+    const { container } = render(<Summary plan={plan} hasExistingChart={false} unreadable={0} />);
+
+    const units = [...container.querySelectorAll(".entry")];
+    expect(units).toHaveLength(2);
+    // A trailing separator would read as a truncated list.
+    expect(units.at(-1)?.querySelector(".dot")).toBeNull();
+  });
+
   it("shows each section's label as a heading", () => {
     const plan = buildPlan([bell("C", 0, 5)], { headMapping: DEFAULT_HEAD_MAPPING });
     render(<Summary plan={plan} hasExistingChart={false} unreadable={0} />);
