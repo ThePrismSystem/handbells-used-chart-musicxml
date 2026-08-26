@@ -70,7 +70,9 @@ describe("readScore", () => {
     const doc = simple(
       "<note><pitch><step>H</step><octave>4</octave></pitch><duration>1</duration></note>",
     );
-    expect(readScore(doc).unreadable).toBe(1);
+    const result = readScore(doc);
+    expect(result.notes).toHaveLength(0);
+    expect(result.unreadable).toBe(1);
   });
 
   it("counts a pitch with no octave as unreadable", () => {
@@ -104,6 +106,12 @@ describe("readScore", () => {
     expect(part?.name).toBe("Handbells");
     expect(part?.noteCount).toBe(1);
     expect(part?.reason).toContain("pitched-percussion.handbells");
+    // A handbell instrument with no <transpose> is already sounding. Asserting
+    // the convention matters because nothing else here would notice the field
+    // being hardcoded: it typechecks, and the line runs whatever it assigns.
+    // This test and the transposition test below pin opposite values, so a
+    // constant cannot satisfy both.
+    expect(part?.convention).toBe("at-bell-name");
   });
 
   it("reads a part's octave transposition", () => {
@@ -113,7 +121,9 @@ describe("readScore", () => {
         "<diatonic>0</diatonic><chromatic>0</chromatic><octave-change>1</octave-change>" +
         `</transpose></attributes>${note("C", "4")}</measure></part>`,
     );
-    expect(readScore(doc).parts[0]?.reason).toContain("<transpose>");
+    const [part] = readScore(doc).parts;
+    expect(part?.reason).toContain("<transpose>");
+    expect(part?.convention).toBe("written-octave-below");
   });
 
   it("skips a chart part's own notes so a re-run cannot double-count", () => {
