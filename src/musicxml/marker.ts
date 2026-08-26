@@ -1,7 +1,7 @@
 // CHART_PART_NAME is exported by Task 17, its first and only importer; the
 // three field names are used only inside this file, so exporting them would
 // fail knip with no consumer to justify it.
-const CHART_PART_NAME = "Handbells Used Chart";
+export const CHART_PART_NAME = "Handbells Used Chart";
 const MISC_PARTS = "handbellChartParts";
 const MISC_MEASURES = "handbellChartMeasures";
 const MISC_PRINT_PARTS = "handbellChartPrintParts";

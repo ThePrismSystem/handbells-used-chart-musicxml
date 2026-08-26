@@ -24,7 +24,7 @@ export interface PlanOptions {
   readonly requiredChimeLast?: string | null | undefined;
 }
 
-interface ChartSection {
+export interface ChartSection {
   readonly kind: ChartKind;
   /** Two for a grand staff, one for a chart that needs no bass half. */
   readonly staves: 1 | 2;
