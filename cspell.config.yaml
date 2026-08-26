@@ -51,6 +51,7 @@ words:
   - dtds
   - Prism
   - unparseable
+  - serialiser
   - serialisers
   - nosniff
 # Check only what CI checks. Without this, `pnpm spell` also scans the

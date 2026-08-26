@@ -50,6 +50,13 @@ describe("parseScore", () => {
       /score-timewise/,
     );
   });
+
+  it("refuses a well-formed XML file that is not a score", () => {
+    // Distinct from the malformed and timewise cases: this parses cleanly and
+    // is rejected on its root element alone.
+    expect(() => parseScore("<html><body/></html>")).toThrow(ScoreParseError);
+    expect(() => parseScore("<html><body/></html>")).toThrow(/not a MusicXML score/);
+  });
 });
 
 describe("serializeScore", () => {
@@ -76,6 +83,16 @@ describe("serializeScore", () => {
     clone.documentElement.setAttribute("version", "3.1");
     expect(serializeScore(parsed, clone)).toContain('version="3.1"');
     expect(serializeScore(parsed)).toContain('version="4.0"');
+  });
+
+  it("prepends the doctype when the serialiser leaves it out", () => {
+    // jsdom's XMLSerializer emits the doctype, so the round-trip test never
+    // reaches this branch. Some browser serialisers do not, and then the
+    // doctype has to be prepended by hand — that is what this pins.
+    const parsed = parseScore(MINIMAL);
+    const withoutDoctype = parseScore("<score-partwise><part-list/></score-partwise>").doc;
+    const output = serializeScore(parsed, withoutDoctype);
+    expect(output.split("<!DOCTYPE").length - 1).toBe(1);
   });
 });
 
