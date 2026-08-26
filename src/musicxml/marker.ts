@@ -45,6 +45,34 @@ function namedChartPartIds(doc: Document): string[] {
   return ids;
 }
 
+/**
+ * Emission marks the chart's own measures implicit and strips that attribute
+ * from the silent tail, so the leading implicit run in the chart part gives
+ * the measure count back even when the marker fields are gone. Counting the
+ * CHART part rather than a music part matters: a music part may legitimately
+ * open on an implicit pickup measure that must not be removed.
+ */
+function chartMeasureCount(doc: Document, chartIds: readonly string[]): number {
+  const [first] = chartIds;
+  if (first === undefined) {
+    return 1;
+  }
+  const part = doc.querySelector(`score-partwise > part[id="${first}"]`);
+  if (part === null) {
+    return 1;
+  }
+  let count = 0;
+  for (const measure of part.querySelectorAll(":scope > measure")) {
+    if (measure.getAttribute("implicit") !== "yes") {
+      break;
+    }
+    count++;
+  }
+  // A chart whose measures were renumbered by another application loses the
+  // attribute; one measure is what the default profile writes.
+  return count > 0 ? count : 1;
+}
+
 export function findChart(doc: Document): ExistingChart | null {
   const fromFields = split(miscValue(doc, MISC_PARTS));
   if (fromFields.length > 0) {
@@ -59,7 +87,9 @@ export function findChart(doc: Document): ExistingChart | null {
   // The fields may have been dropped by another application's re-export; the
   // part name alone still identifies the chart.
   const named = namedChartPartIds(doc);
-  return named.length > 0 ? { partIds: named, measures: 1, printParts: [] } : null;
+  return named.length > 0
+    ? { partIds: named, measures: chartMeasureCount(doc, named), printParts: [] }
+    : null;
 }
 
 export function writeMarker(doc: Document, chart: ExistingChart): void {
@@ -67,9 +97,14 @@ export function writeMarker(doc: Document, chart: ExistingChart): void {
   let identification = root.querySelector(":scope > identification");
   if (identification === null) {
     identification = doc.createElement("identification");
-    // The schema orders work, movement-*, identification, defaults, credit,
-    // part-list — so inserting before part-list is always correct.
-    root.insertBefore(identification, root.querySelector(":scope > part-list"));
+    // score-header order is work, movement-number, movement-title,
+    // identification, defaults, credit*, part-list. Anchoring on part-list
+    // alone puts identification AFTER defaults and credit on a score that has
+    // those but no identification of its own.
+    root.insertBefore(
+      identification,
+      root.querySelector(":scope > defaults, :scope > credit, :scope > part-list"),
+    );
   }
 
   let miscellaneous = identification.querySelector(":scope > miscellaneous");
@@ -129,7 +164,13 @@ export function removeChart(doc: Document): boolean {
   }
   const miscellaneous = doc.querySelector("identification > miscellaneous");
   if (miscellaneous !== null && miscellaneous.children.length === 0) {
+    const identification = miscellaneous.parentElement;
     miscellaneous.remove();
+    // Only an identification this tool created is now empty; one the score
+    // brought with it still holds its encoding or creator elements.
+    if (identification !== null && identification.children.length === 0) {
+      identification.remove();
+    }
   }
 
   return true;

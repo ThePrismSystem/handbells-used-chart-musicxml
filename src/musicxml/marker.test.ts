@@ -55,6 +55,27 @@ describe("findChart", () => {
     ).doc;
     expect(findChart(doc)).toEqual({ partIds: ["HBC1"], measures: 1, printParts: [] });
   });
+
+  it("recovers a multi-measure chart's extent from its implicit measures", () => {
+    // Marker fields gone, part name surviving. The chart's own measures are
+    // implicit; its tail is not. Without this the chart's second measure is
+    // left behind on every part as an orphaned blank bar.
+    const doc = parseScore(
+      score(
+        '<score-part id="HBC1"><part-name>Handbells Used Chart</part-name></score-part>' +
+          '<score-part id="P1"><part-name>Piano</part-name></score-part>',
+        '<part id="HBC1"><measure number="0" implicit="yes"/>' +
+          '<measure number="0.1" implicit="yes"/><measure number="1"/></part>' +
+          '<part id="P1"><measure number="0" implicit="yes"/>' +
+          `<measure number="0.1" implicit="yes"/>${measure("1")}${measure("2")}</part>`,
+      ),
+    ).doc;
+    expect(findChart(doc)?.measures).toBe(2);
+
+    removeChart(doc);
+    const measures = doc.querySelectorAll('part[id="P1"] > measure');
+    expect([...measures].map((m) => m.getAttribute("number"))).toEqual(["1", "2"]);
+  });
 });
 
 describe("removeChart", () => {
@@ -135,6 +156,47 @@ describe("removeChart", () => {
     expect(doc.querySelector("miscellaneous-field")).toBeNull();
     expect(findChart(doc)).toBeNull();
   });
+
+  it("removes the identification it created", () => {
+    const doc = plain();
+    writeMarker(doc, { partIds: ["HBC1"], measures: 1, printParts: [] });
+    expect(doc.querySelector("identification")).not.toBeNull();
+    removeChart(doc);
+    expect(doc.querySelector("identification")).toBeNull();
+  });
+
+  it("keeps an identification the score already had", () => {
+    const doc = parseScore(
+      '<score-partwise version="4.0">' +
+        "<identification><encoding><software>Finale</software></encoding></identification>" +
+        '<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>' +
+        `<part id="P1">${measure("1")}${measure("2")}</part></score-partwise>`,
+    ).doc;
+    writeMarker(doc, { partIds: ["HBC1"], measures: 1, printParts: [] });
+    removeChart(doc);
+    expect(doc.querySelector("identification > encoding > software")?.textContent).toBe("Finale");
+  });
+
+  it("removes the leading measure from every remaining part, not just the first", () => {
+    const doc = parseScore(
+      score(
+        '<score-part id="HBC1"><part-name>Handbells Used Chart</part-name></score-part>' +
+          '<score-part id="P1"><part-name>Piano</part-name></score-part>' +
+          '<score-part id="P2"><part-name>Organ</part-name></score-part>',
+        `<part id="HBC1">${measure("0")}${measure("1")}</part>` +
+          `<part id="P1">${measure("0")}${measure("1")}${measure("2")}</part>` +
+          `<part id="P2">${measure("0")}${measure("1")}${measure("2")}</part>`,
+      ),
+    ).doc;
+    writeMarker(doc, { partIds: ["HBC1"], measures: 1, printParts: [] });
+    removeChart(doc);
+    for (const id of ["P1", "P2"]) {
+      const numbers = [...doc.querySelectorAll(`part[id="${id}"] > measure`)].map((m) =>
+        m.getAttribute("number"),
+      );
+      expect(numbers).toEqual(["1", "2"]);
+    }
+  });
 });
 
 describe("writeMarker", () => {
@@ -152,10 +214,20 @@ describe("writeMarker", () => {
     expect(findChart(doc)?.partIds).toEqual(["HBC2"]);
   });
 
-  it("puts identification before part-list, as the schema requires", () => {
-    const doc = plain();
+  it("puts identification before defaults and credit, as the schema requires", () => {
+    // A score with defaults or credit but no identification is what another
+    // application's re-export can leave behind.
+    const doc = parseScore(
+      '<score-partwise version="4.0"><work><work-title>T</work-title></work>' +
+        "<defaults/><credit><credit-words>c</credit-words></credit>" +
+        '<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>' +
+        `<part id="P1">${measure("1")}</part></score-partwise>`,
+    ).doc;
     writeMarker(doc, { partIds: ["HBC1"], measures: 1, printParts: [] });
     const children = [...doc.documentElement.children].map((c) => c.nodeName);
+    expect(children.indexOf("identification")).toBeGreaterThan(children.indexOf("work"));
+    expect(children.indexOf("identification")).toBeLessThan(children.indexOf("defaults"));
+    expect(children.indexOf("identification")).toBeLessThan(children.indexOf("credit"));
     expect(children.indexOf("identification")).toBeLessThan(children.indexOf("part-list"));
   });
 });
