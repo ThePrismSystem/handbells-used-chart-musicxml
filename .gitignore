@@ -34,6 +34,7 @@ CLAUDE.md
 .superpowers/
 docs/superpowers/
 AGENTS.md
+.impeccable.md
 
 # Temporary files
 .tmp/
@@ -42,3 +43,4 @@ AGENTS.md
 
 # Reference material — third-party copyrighted scores, kept local only
 test/fixtures/private/
+dorico-check/

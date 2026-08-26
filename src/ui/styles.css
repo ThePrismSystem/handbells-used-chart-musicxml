@@ -1,0 +1,432 @@
+/* Self-hosted so the page makes no third-party request: the tool's promise is
+   that nothing leaves your browser, and a font CDN would quietly break it.
+   latin subset only (U+0000-00FF), which covers the U+00B7 bell-index
+   separator; everything else in the app is ASCII. */
+@font-face {
+  font-family: "Spectral";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/spectral-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Spectral";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/spectral-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-500.woff2") format("woff2");
+}
+
+:root {
+  --ground: #f6f5f1; /* warm-neutral paper, deliberately not cream */
+  --panel: #fffffe;
+  --ink: #17181a;
+  --muted: #6a6b65;
+  --rule: #d5d4ca; /* hairline */
+  --rule-strong: #a9a89c; /* structural rules */
+  --control-border: #89887c; /* light: 3:1 on ground, panel and warn-bg */
+  --accent: #1f4e5f; /* deep teal-ink: structure and the primary action */
+  --accent-hover: #163a47;
+  --warn-bg: #efece1;
+
+  --font-serif: "Spectral", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Prose measure. The page is wide because tables and the bell index want the
+     room; running text does not, and an edition never sets it this wide. */
+  --measure: 68ch;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #16181a;
+    --panel: #1d2023;
+    --ink: #eceada;
+    --muted: #9a9c92;
+    --rule: #32363a;
+    --rule-strong: #555a5f; /* structural rules */
+    --control-border: #6b7075; /* dark: 3:1 on ground, panel and warn-bg */
+    --accent: #86b3c1;
+    --accent-hover: #a5cbd7;
+    --warn-bg: #23262a;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 4rem;
+}
+
+/* Masthead: the edition's front matter. */
+.masthead {
+  padding-bottom: 1.25rem;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 2rem;
+}
+
+.masthead h1 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.masthead .summary {
+  margin: 0.5rem 0 0;
+  font-style: italic;
+  color: var(--muted);
+}
+
+/* One treatment for every small uppercase label — section eyebrows, field
+   labels and table headers all play the same role and are set the same way.
+   They previously drifted to 0.16em, 0.10em and 0.08em at two sizes. */
+.eyebrow,
+.field label,
+.notehead-panel thead th {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* The content outranks its own label. */
+.eyebrow {
+  margin: 0 0 0.75rem;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Running text is held to the measure; tabular data and the bell index are not,
+   because their job is to fill the column. */
+.masthead .summary,
+.warning p,
+.parts-panel .reason,
+.hint,
+.summary > p {
+  max-width: var(--measure);
+}
+
+/* Counts are literal, aligned data: IBM Plex Mono with tabular figures. */
+.mono,
+.meta {
+  font-variant-numeric: tabular-nums;
+}
+
+.warning {
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+}
+
+.warning p {
+  margin: 0.25rem 0;
+}
+
+.warning .eyebrow {
+  margin-bottom: 0.25rem;
+}
+
+.warning button {
+  margin-top: 0.5rem;
+}
+
+/* Controls: one footer row, labels stacked over inputs, primary action
+   right-aligned at the end of the row. */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule-strong);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.file-field {
+  border: 1px dashed transparent;
+  padding: 0.25rem;
+  margin: -0.25rem;
+}
+
+.file-field.dragging {
+  border-color: var(--accent);
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* Square corners: the detail that keeps this reading as print, not a form. */
+input[type="file"] {
+  border: 1px solid var(--control-border);
+  border-radius: 0;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-serif);
+}
+
+button {
+  border-radius: 0;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  padding: 0.75rem 1.25rem;
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--panel);
+  border: 1px solid var(--accent);
+}
+
+.warning button {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--control-border);
+}
+
+/* Review panels: eyebrow-led sections in reading order, no card chrome. */
+.panel {
+  margin-bottom: 2.5rem;
+}
+
+/* Notehead table: hairline rows, tabular counts, no zebra striping. */
+.notehead-panel table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.notehead-panel th,
+.notehead-panel td {
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+}
+
+.notehead-panel thead th {
+  border-bottom: 2px solid var(--rule-strong);
+}
+
+.notehead-panel td.count {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.assign-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+.assign-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+/* Parts panel: one fieldset per part, no default browser chrome. */
+.parts-panel .part {
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  padding: 1rem 0;
+  margin: 0;
+}
+
+.parts-panel .part:last-of-type {
+  border-bottom: none;
+}
+
+.parts-panel legend {
+  padding: 0;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.parts-panel .reason {
+  margin: 0.25rem 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.convention-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+/* Options panel: label fields, colour swatches, target select. */
+.options-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem 2rem;
+}
+
+.options-panel input[type="text"],
+.options-panel select {
+  border: 1px solid var(--control-border);
+  border-radius: 0;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0.5rem 0.5rem;
+  font-family: var(--font-serif);
+}
+
+.checkbox-field label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: none;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+/* Always bordered, so the swatch stays visible whatever colour is chosen. */
+.swatch {
+  border: 1px solid var(--control-border);
+  padding: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  cursor: pointer;
+}
+
+/* Summary: the continuous bell index, a catalogue of incipits. */
+.summary .section {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.summary .section:last-of-type {
+  border-bottom: none;
+}
+
+.summary .section h3 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.summary .index {
+  margin: 0;
+  line-height: 1.8;
+}
+
+.summary .entry {
+  white-space: nowrap;
+}
+
+.summary .dot {
+  color: var(--rule-strong);
+}
+
+/* Interaction states. Colour only, no movement: this is meant to read as set
+   type that responds, not as an animated interface. */
+button,
+input[type="file"],
+.options-panel input[type="text"],
+.options-panel select,
+.swatch {
+  transition:
+    background-color 120ms ease-out,
+    border-color 120ms ease-out,
+    color 120ms ease-out;
+}
+
+button.primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+button.primary:active {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.warning button:hover {
+  border-color: var(--ink);
+  background: var(--panel);
+}
+
+.warning button:active {
+  background: var(--ground);
+}
+
+input[type="file"]:hover,
+.options-panel input[type="text"]:hover,
+.options-panel select:hover,
+.swatch:hover {
+  border-color: var(--ink);
+}
+
+/* The whole row is the target, not just the 13px native control. */
+.assign-group label,
+.convention-options label {
+  padding: 0.25rem 0;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  // Test files are entry points so that src/test-support/, which only tests
+  // reach, does not read as unused code.
+  "entry": ["src/ui/main.tsx", "vite.config.ts", "src/**/*.test.{ts,tsx}"],
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignoreDependencies": [
+    // Permanent: used by tests via the testing-library setup, not imported directly.
+    "@testing-library/user-event",
+  ],
+}

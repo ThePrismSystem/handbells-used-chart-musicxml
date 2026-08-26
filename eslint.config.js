@@ -1,6 +1,7 @@
 import eslintCommentsPlugin from "@eslint-community/eslint-plugin-eslint-comments/configs";
 import eslintConfigPrettier from "eslint-config-prettier";
 import importPlugin from "eslint-plugin-import-x";
+import jsxA11yPlugin from "eslint-plugin-jsx-a11y";
 import reactHooksPlugin from "eslint-plugin-react-hooks";
 import reactRefreshPlugin from "eslint-plugin-react-refresh";
 import unicornPlugin from "eslint-plugin-unicorn";
@@ -25,7 +26,7 @@ export default tseslint.config(
         // itself to `src`. Root-level tooling files live in tsconfig.node.json,
         // so point the service at it explicitly or they lint without type info.
         projectService: {
-          allowDefaultProject: ["vitest.config.ts"],
+          allowDefaultProject: ["vitest.config.ts", "playwright.config.ts", "test/a11y/*.ts"],
           defaultProject: "tsconfig.node.json",
         },
       },
@@ -38,6 +39,7 @@ export default tseslint.config(
       unicorn: unicornPlugin,
       "react-hooks": reactHooksPlugin,
       "react-refresh": reactRefreshPlugin,
+      "jsx-a11y": jsxA11yPlugin,
     },
     rules: {
       // Ban all eslint-disable comments — fix the violation, don't suppress it
@@ -127,6 +129,9 @@ export default tseslint.config(
 
       // React hooks rules
       ...reactHooksPlugin.configs.recommended.rules,
+
+      // Accessibility rules
+      ...jsxA11yPlugin.flatConfigs.recommended.rules,
 
       // React refresh — only export components
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
