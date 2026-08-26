@@ -56,6 +56,18 @@ describe("findChart", () => {
     expect(findChart(doc)).toEqual({ partIds: ["HBC1"], measures: 1, printParts: [] });
   });
 
+  it("treats a missing measure count as one measure", () => {
+    // Distinct from the corrupt-value case above: here the field is absent
+    // entirely, which is what an application that preserves some
+    // miscellaneous-fields but not others leaves behind.
+    const doc = parseScore(
+      `<score-partwise version="4.0"><identification><miscellaneous>` +
+        `<miscellaneous-field name="handbellChartParts">HBC1</miscellaneous-field>` +
+        `</miscellaneous></identification><part-list/></score-partwise>`,
+    ).doc;
+    expect(findChart(doc)).toEqual({ partIds: ["HBC1"], measures: 1, printParts: [] });
+  });
+
   it("recovers a multi-measure chart's extent from its implicit measures", () => {
     // Marker fields gone, part name surviving. The chart's own measures are
     // implicit; its tail is not. Without this the chart's second measure is
@@ -175,6 +187,19 @@ describe("removeChart", () => {
     writeMarker(doc, { partIds: ["HBC1"], measures: 1, printParts: [] });
     removeChart(doc);
     expect(doc.querySelector("identification > encoding > software")?.textContent).toBe("Finale");
+  });
+
+  it("survives a chart part listed but missing from the body", () => {
+    // A part-list entry with no matching <part> is malformed but real. The
+    // measure count has nothing to read, so it falls back rather than throwing.
+    const doc = parseScore(
+      score(
+        '<score-part id="HBC1"><part-name>Handbells Used Chart</part-name></score-part>' +
+          '<score-part id="P1"><part-name>Piano</part-name></score-part>',
+        `<part id="P1">${measure("1")}${measure("2")}</part>`,
+      ),
+    ).doc;
+    expect(findChart(doc)?.measures).toBe(1);
   });
 
   it("removes the leading measure from every remaining part, not just the first", () => {

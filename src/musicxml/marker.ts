@@ -52,17 +52,12 @@ function namedChartPartIds(doc: Document): string[] {
  * CHART part rather than a music part matters: a music part may legitimately
  * open on an implicit pickup measure that must not be removed.
  */
-function chartMeasureCount(doc: Document, chartIds: readonly string[]): number {
-  const [first] = chartIds;
-  if (first === undefined) {
-    return 1;
-  }
-  const part = doc.querySelector(`score-partwise > part[id="${first}"]`);
-  if (part === null) {
-    return 1;
-  }
+function chartMeasureCount(doc: Document, chartId: string): number {
+  const part = doc.querySelector(`score-partwise > part[id="${chartId}"]`);
   let count = 0;
-  for (const measure of part.querySelectorAll(":scope > measure")) {
+  // A part-list entry with no matching <part> in the body is malformed but
+  // real; it yields no measures and falls through to the default below.
+  for (const measure of part?.querySelectorAll(":scope > measure") ?? []) {
     if (measure.getAttribute("implicit") !== "yes") {
       break;
     }
@@ -87,9 +82,11 @@ export function findChart(doc: Document): ExistingChart | null {
   // The fields may have been dropped by another application's re-export; the
   // part name alone still identifies the chart.
   const named = namedChartPartIds(doc);
-  return named.length > 0
-    ? { partIds: named, measures: chartMeasureCount(doc, named), printParts: [] }
-    : null;
+  const [chartId] = named;
+  if (chartId === undefined) {
+    return null;
+  }
+  return { partIds: named, measures: chartMeasureCount(doc, chartId), printParts: [] };
 }
 
 export function writeMarker(doc: Document, chart: ExistingChart): void {
