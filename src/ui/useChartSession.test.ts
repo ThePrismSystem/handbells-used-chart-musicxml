@@ -114,6 +114,11 @@ describe("useChartSession", () => {
     const download = first.current.buildDownload();
     const text = await download?.blob.text();
     const second = await loaded(text ?? "");
+    // read is null when a load fails, and `null?.existingChart` is undefined,
+    // which satisfies not.toBeNull() — so a score that never loaded would pass
+    // a test named for noticing an existing chart. Pin the load first.
+    expect(second.current.status).toBe("ready");
+    expect(second.current.read).not.toBeNull();
     expect(second.current.read?.existingChart).not.toBeNull();
   });
 
@@ -122,6 +127,13 @@ describe("useChartSession", () => {
     act(() => {
       result.current.reset();
     });
+    // reset() clears four things. Asserting only status would stay green if
+    // any of the other three lines were deleted, leaving a stale mapping to be
+    // applied to whatever file is loaded next.
     expect(result.current.status).toBe("empty");
+    expect(result.current.read).toBeNull();
+    expect(result.current.plan).toBeNull();
+    expect(result.current.fileName).toBeNull();
+    expect(result.current.buildDownload()).toBeNull();
   });
 });

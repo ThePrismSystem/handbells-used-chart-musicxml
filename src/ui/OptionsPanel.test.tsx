@@ -80,8 +80,11 @@ describe("OptionsPanel", () => {
     expect(onChange).toHaveBeenCalledWith({ smbColor: "#996633" });
   });
 
-  it("always gives the colour swatches a visible border", () => {
-    // A colour that matches the panel background must still be findable.
+  it("marks both colour inputs as swatches", () => {
+    // The border that keeps a swatch findable when its colour matches the panel
+    // is a CSS property, and jsdom applies no stylesheet — so this can only
+    // assert the hook the rule attaches to, not the rendered border. The
+    // Playwright scan is where a rendered property could be checked.
     render(<OptionsPanel settings={settings} plan={null} onChange={vi.fn()} />);
     expect(screen.getByLabelText(/handchimes colour/i)).toHaveClass("swatch");
     expect(screen.getByLabelText(/smb colour/i)).toHaveClass("swatch");

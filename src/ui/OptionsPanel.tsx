@@ -1,3 +1,4 @@
+import { DEFAULT_LABEL } from "../core/plan.js";
 import { TARGETS } from "../targets/profiles.js";
 
 import type { ChartSettings } from "./useChartSession.js";
@@ -10,15 +11,9 @@ interface OptionsPanelProps {
   readonly onChange: (settings: Partial<ChartSettings>) => void;
 }
 
-const GENERATED_LABEL: Record<ChartKind, string> = {
-  bells: "Handbells Used",
-  chimes: "Handchimes Used",
-  smbs: "SMBs Used",
-};
-
 /** The plan already carries the generated label whenever no override is set. */
 function placeholderFor(plan: ChartPlan | null, kind: ChartKind): string {
-  return plan?.sections.find((section) => section.kind === kind)?.label ?? GENERATED_LABEL[kind];
+  return plan?.sections.find((section) => section.kind === kind)?.label ?? DEFAULT_LABEL[kind];
 }
 
 export function OptionsPanel({ settings, plan, onChange }: OptionsPanelProps) {

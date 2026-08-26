@@ -75,14 +75,20 @@ is shown rather than assumed.
   chart and will add a second one. Delete the old chart by hand if that happens.
 - **The octave convention is a guess on parts that carry no signal.** The app
   tells you when it is guessing, and you can correct it.
-- **No bracket support yet**, so scores using required-ranges get a chart without
-  the optional-bell markings that published charts show.
+- **Required ranges are not supported yet.** Published charts bracket the bells
+  outside a piece's required range as optional; there is currently no way to tell
+  this tool what that range is, so every bell it finds is charted the same way.
 
 ## Licence
 
 Proprietary — copyright ThePrismSystem, all rights reserved. See [LICENSE](LICENSE).
 This repository is public for transparency; publication is not an offer of licence
 terms.
+
+The two bundled typefaces are the exception: Spectral and IBM Plex Mono are the
+work of their own authors, redistributed under the SIL Open Font License 1.1.
+Their licences and attribution are in
+[`public/fonts/`](public/fonts/README.md).
 
 [musescore-ext]: https://github.com/ThePrismSystem/handbells-used-chart-musescore-extension
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import accidentals from "../test/fixtures/accidentals.musicxml?raw";
 import pianoHandbells from "../test/fixtures/piano-handbells.musicxml?raw";
 import twoPartBellsAndChimes from "../test/fixtures/two-part-bells-and-chimes.musicxml?raw";
 
@@ -27,6 +28,33 @@ describe("the whole pipeline", () => {
     // C5, G#5, Ab5 and C3, G2 written on a Piano part are bells an octave up.
     expect(plan.sections[0]?.label).toBe("Handbells Used: 4");
     expect(plan.sections[1]?.label).toBe("Handchimes Used: 1");
+  });
+
+  it("charts a flat and its natural as two separate bells", async () => {
+    // The pair an arranger most needs to trust: Eb and E are different bells,
+    // and a chart that merged them or printed a cautionary natural on the E
+    // would misreport what the piece requires. MusicXML's <accidental> has no
+    // print-object, so the natural is emitted as no element at all rather than
+    // as a hidden one — whether a reader then derives one is what the manual
+    // Dorico gate checks.
+    const parsed = parseScore(accidentals);
+    const read = readScore(parsed.doc);
+    const plan = planFor(read, options(read));
+    const xml = applyChart(parsed, plan, "dorico");
+
+    expect(await validateMusicXml(xml)).toEqual([]);
+    expect(plan.sections[0]?.treble.flat().map((entry) => entry.name)).toEqual([
+      "Eb6",
+      "E6",
+      "Bb6",
+      "B6",
+    ]);
+
+    const chartPart = parseScore(xml).doc.querySelector("score-partwise > part");
+    const emitted = [...(chartPart?.querySelectorAll("note") ?? [])]
+      .filter((note) => note.querySelector("pitch") !== null)
+      .map((note) => note.querySelector("accidental")?.textContent ?? null);
+    expect(emitted.slice(0, 4)).toEqual(["flat", null, "flat", null]);
   });
 
   it("does not mutate the parsed document", () => {

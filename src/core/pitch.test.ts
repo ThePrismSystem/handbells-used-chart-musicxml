@@ -62,7 +62,7 @@ describe("parseName", () => {
     expect(() => parseName("C-1")).toThrow(/not a bell name/);
   });
 
-  it("refuses empty and non-string input", () => {
+  it("refuses empty and blank input", () => {
     expect(() => parseName("")).toThrow(/not a bell name/);
     expect(() => parseName("   ")).toThrow(/not a bell name/);
   });

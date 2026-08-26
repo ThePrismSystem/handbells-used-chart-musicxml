@@ -29,8 +29,28 @@ describe("NoteheadTable", () => {
 
   it("lists every notehead found, with its count", () => {
     render(<NoteheadTable counts={counts} assignments={assignments} onAssign={vi.fn()} />);
-    const row = screen.getByRole("row", { name: /^x\b/i });
-    expect(within(row).getByText("8")).toBeInTheDocument();
+    // "every" has to mean every one: asserting a single row would pass on a
+    // table that silently dropped the other two, which is the bug that would
+    // leave an arranger wondering where their chimes went.
+    const rows = screen.getAllByRole("row").slice(1);
+    expect(
+      rows.map((row) => {
+        const cells = within(row).getAllByRole("cell");
+        return `${cells[0]?.textContent ?? ""}:${cells[1]?.textContent ?? ""}`;
+      }),
+    ).toEqual([...counts].map(([head, count]) => `${head}:${String(count)}`));
+  });
+
+  it("orders the rows by count, highest first", () => {
+    // The panel's whole job is to surface a large count stranded in Ignore, so
+    // the order is load-bearing rather than cosmetic.
+    render(<NoteheadTable counts={counts} assignments={assignments} onAssign={vi.fn()} />);
+    const heads = screen
+      .getAllByRole("row")
+      .slice(1)
+      .map((row) => within(row).getAllByRole("cell")[0]?.textContent);
+    const expected = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    expect(heads).toEqual(expected.map(([head]) => head));
   });
 
   it("gives each row a labelled radio group", () => {

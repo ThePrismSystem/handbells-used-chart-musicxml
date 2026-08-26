@@ -1,6 +1,6 @@
-// CHART_PART_NAME is exported by Task 17, its first and only importer; the
-// three field names are used only inside this file, so exporting them would
-// fail knip with no consumer to justify it.
+// CHART_PART_NAME is exported for targets/emit.ts, its only importer. The three
+// field names below stay private: they are used only in this file, and an export
+// with no consumer fails knip.
 export const CHART_PART_NAME = "Handbells Used Chart";
 const MISC_PARTS = "handbellChartParts";
 const MISC_MEASURES = "handbellChartMeasures";

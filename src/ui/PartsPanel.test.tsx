@@ -44,7 +44,12 @@ describe("PartsPanel", () => {
 
   it("shows each part's note count", () => {
     render(<PartsPanel parts={parts} conventions={conventions} onChange={vi.fn()} />);
-    expect(screen.getByText("312")).toBeInTheDocument();
+    // Both parts, not just the first: a panel that rendered one count for
+    // every part would pass a single-value assertion.
+    for (const part of parts) {
+      const group = screen.getByRole("group", { name: new RegExp(part.name, "i") });
+      expect(within(group).getByText(String(part.noteCount))).toBeInTheDocument();
+    }
   });
 
   it("falls back to the detected convention when it has not been overridden", () => {

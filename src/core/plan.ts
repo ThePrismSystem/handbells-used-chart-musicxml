@@ -56,7 +56,7 @@ const CANONICAL_HEAD: Record<ChartKind, string> = {
   smbs: "la",
 };
 
-const DEFAULT_LABEL: Record<ChartKind, string> = {
+export const DEFAULT_LABEL: Record<ChartKind, string> = {
   bells: "Handbells Used",
   chimes: "Handchimes Used",
   smbs: "SMBs Used",

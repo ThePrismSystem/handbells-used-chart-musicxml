@@ -279,6 +279,64 @@ function silentMeasure(
   return measure;
 }
 
+interface Metre {
+  readonly beats: number;
+  readonly beatType: number;
+}
+
+/**
+ * A measure's own duration in divisions. `divisions` counts per quarter note by
+ * definition, so a metre whose measure is not a whole number of them could not
+ * express its own notes either.
+ */
+function metreDuration(metre: Metre, divisions: number): number {
+  return (metre.beats * divisions * 4) / metre.beatType;
+}
+
+function metreOf(measure: Element): Metre | null {
+  const time = measure.querySelector(":scope > attributes > time");
+  const beats = Number(time?.querySelector("beats")?.textContent);
+  const beatType = Number(time?.querySelector("beat-type")?.textContent);
+  return beats > 0 && beatType > 0 ? { beats, beatType } : null;
+}
+
+/**
+ * The chart part's tail, which runs alongside the music. Unlike the silent
+ * measures prepended to the music parts, these follow the MUSIC's metre: the
+ * chart part is coming out of the chart's own time signature and has to be put
+ * back, or it runs the whole piece in the wrong metre and at the wrong measure
+ * duration.
+ */
+function silentTail(
+  doc: Document,
+  number: string,
+  metre: Metre,
+  divisions: number,
+  declareMetre: boolean,
+): Element {
+  const measure = el(doc, "measure", undefined, { number });
+
+  if (declareMetre) {
+    const attributes = el(doc, "attributes");
+    const time = el(doc, "time", undefined, { "print-object": "no" });
+    time.append(el(doc, "beats", String(metre.beats)));
+    time.append(el(doc, "beat-type", String(metre.beatType)));
+    attributes.append(time);
+    measure.append(attributes);
+  }
+
+  const note = el(doc, "note", undefined, { "print-object": "no" });
+  note.append(el(doc, "rest", undefined, { measure: "yes" }));
+  note.append(el(doc, "duration", String(metreDuration(metre, divisions))));
+  note.append(el(doc, "voice", "1"));
+  measure.append(note);
+
+  const barline = el(doc, "barline", undefined, { location: "right" });
+  barline.append(el(doc, "bar-style", "none"));
+  measure.append(barline);
+  return measure;
+}
+
 /** Hides the chart's own staves once the music starts. */
 function hideAfterChart(doc: Document, measure: Element, staves: number): void {
   const attributes = el(doc, "attributes");
@@ -311,8 +369,17 @@ export function emitChart(doc: Document, plan: ChartPlan, profile: TargetProfile
 
   // The music's own measure numbers, so the chart part's silent tail matches
   // them. A score may open on a pickup numbered 0, so counting from 1 is wrong.
-  const musicNumbers = [...firstMusicPart.querySelectorAll(":scope > measure")].map(
-    (measure, index) => measure.getAttribute("number") ?? String(index + 1),
+  // The governing metre travels with each number and carries forward, since a
+  // measure only declares <time> when it changes.
+  let governing: Metre = { beats: perMeasure, beatType: Number(BEAT_TYPE) };
+  const musicMeasures = [...firstMusicPart.querySelectorAll(":scope > measure")].map(
+    (measure, index) => {
+      governing = metreOf(measure) ?? governing;
+      return {
+        number: measure.getAttribute("number") ?? String(index + 1),
+        metre: governing,
+      };
+    },
   );
 
   // Chart parts sit at the top of the system, so both the score-part and the
@@ -334,12 +401,16 @@ export function emitChart(doc: Document, plan: ChartPlan, profile: TargetProfile
       part.append(chartMeasure(doc, section, profile, divisions, index, from, count));
     }
 
-    // A silent tail keeps the chart part the same length as every other part.
-    for (const [index, number] of musicNumbers.entries()) {
-      const tail = silentMeasure(doc, profile, index + measureCount, perMeasure, divisions);
-      tail.setAttribute("number", number);
-      tail.removeAttribute("implicit");
-      part.append(tail);
+    // A silent tail keeps the chart part in step with every other part — the
+    // same measure count, and the same metre and duration in each of them.
+    // Starting from "" makes the first tail measure always restate the metre:
+    // the chart part is coming out of its own time signature and cannot
+    // inherit the music's.
+    let declared = "";
+    for (const { number, metre } of musicMeasures) {
+      const signature = `${String(metre.beats)}/${String(metre.beatType)}`;
+      part.append(silentTail(doc, number, metre, divisions, signature !== declared));
+      declared = signature;
     }
 
     if (profile.hideChartStavesAfterChart) {
@@ -369,8 +440,6 @@ export function emitChart(doc: Document, plan: ChartPlan, profile: TargetProfile
       }
     }
   }
-
-  profile.postProcess?.(doc, plan);
 
   return { partIds, measures: measureCount, printParts };
 }

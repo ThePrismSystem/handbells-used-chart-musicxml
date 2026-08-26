@@ -272,28 +272,26 @@ describe("emitChart", () => {
     ).toBe("1");
   });
 
-  it("leaves the system break alone when the profile says not to add one", () => {
+  it("adds no system break when the profile says not to", () => {
     const { doc, chart } = emitted([bell("C", 0, 5)], { ...DORICO, systemBreakAfterChart: false });
     expect(doc.querySelector("print")).toBeNull();
     expect(chart.printParts).toEqual([]);
   });
 
-  it("runs a target's postProcess escape hatch", () => {
-    // Neither shipped profile defines one, so without this the optional call
-    // is never taken and the seam that makes adding a new target possible has
-    // no cover at all. Recording the argument state also pins WHEN it runs:
-    // after the chart part is in the document, not before.
-    const calls: { parts: number; sections: number }[] = [];
-    emitted([bell("C", 0, 5)], {
-      ...DORICO,
-      postProcess: (target, plan) => {
-        calls.push({
-          parts: target.querySelectorAll("score-partwise > part").length,
-          sections: plan.sections.length,
-        });
-      },
-    });
-    expect(calls).toEqual([{ parts: 2, sections: 1 }]);
+  it("leaves a system break the score already had", () => {
+    // The name above can only claim "adds none", because SOURCE carries no
+    // <print> to leave alone. This is the other half: an existing break must
+    // survive untouched, and must not be counted as one this tool added.
+    const parsed = parseScore(
+      SOURCE.replace('<measure number="1">', '<measure number="1"><print new-page="yes"/>'),
+    );
+    const chart = emitChart(parsed.doc, planFor([bell("C", 0, 5)]), DORICO);
+
+    const prints = [...parsed.doc.querySelectorAll('part[id="P1"] > measure > print')];
+    expect(prints).toHaveLength(1);
+    expect(prints[0]?.getAttribute("new-page")).toBe("yes");
+    expect(prints[0]?.hasAttribute("new-system")).toBe(false);
+    expect(chart.printParts).toEqual([]);
   });
 
   it("emits a schema-valid chart for the generic target", async () => {
@@ -337,6 +335,86 @@ describe("emitChart", () => {
       p.getAttribute("id"),
     );
     expect(new Set(ids).size).toBe(ids.length);
+    expect(await validateMusicXml(serializeScore(parsed))).toEqual([]);
+  });
+});
+
+describe("the chart part's silent tail", () => {
+  const metreOf = (measure: Element): string | null => {
+    const time = measure.querySelector(":scope > attributes > time");
+    return time === null
+      ? null
+      : `${time.querySelector("beats")?.textContent ?? "?"}/${time.querySelector("beat-type")?.textContent ?? "?"}`;
+  };
+  const tail = (doc: Document, chartId: string) =>
+    [...doc.querySelectorAll(`part[id="${chartId}"] > measure`)].filter(
+      (measure) => measure.getAttribute("implicit") !== "yes",
+    );
+
+  it("puts the chart part back into the music's metre where the music resumes", () => {
+    // The chart part declares its own time signature — one beat per column —
+    // so the first tail measure has to restore the music's, or the chart part
+    // runs the whole piece in the chart's metre. A one-column chart against
+    // 4/4 music is the case that makes this visible: 1/4 versus 4/4.
+    const parsed = parseScore(SOURCE);
+    const chart = emitChart(parsed.doc, planFor([bell("C", 0, 5)]), DORICO);
+    const chartId = chart.partIds[0] ?? "";
+
+    expect(metreOf(tail(parsed.doc, chartId)[0] as Element)).toBe("4/4");
+  });
+
+  it("gives each tail measure the music's own measure duration", () => {
+    // A measure-rest's duration is what advances the bar. Emitting the chart's
+    // duration here leaves the chart part short in every measure of the piece,
+    // which schema validation does not check.
+    const parsed = parseScore(SOURCE);
+    const chart = emitChart(parsed.doc, planFor([bell("C", 0, 5)]), DORICO);
+    const chartId = chart.partIds[0] ?? "";
+
+    const durations = tail(parsed.doc, chartId).map(
+      (measure) => measure.querySelector(":scope > note > duration")?.textContent,
+    );
+    // SOURCE is 4/4 with divisions 2, so a full measure is 8 — not the 1 beat
+    // the single-column chart measure uses.
+    expect(durations).toEqual(["8", "8"]);
+  });
+
+  it("re-declares the metre only where the music changes it", () => {
+    // Restating <time> in every measure would be noise; omitting it at a real
+    // change would be wrong. This score goes 4/4, 4/4, 3/4.
+    const parsed = parseScore(
+      SOURCE.replace(
+        '<measure number="2"><note><rest/><duration>8</duration></note></measure>',
+        '<measure number="2"><note><rest/><duration>8</duration></note></measure>' +
+          '<measure number="3"><attributes>' +
+          "<time><beats>3</beats><beat-type>4</beat-type></time></attributes>" +
+          "<note><rest/><duration>6</duration></note></measure>",
+      ),
+    );
+    const chart = emitChart(parsed.doc, planFor([bell("C", 0, 5)]), DORICO);
+    const chartId = chart.partIds[0] ?? "";
+
+    expect(tail(parsed.doc, chartId).map(metreOf)).toEqual(["4/4", null, "3/4"]);
+  });
+
+  it("matches the music measure for measure through a metre change", async () => {
+    const parsed = parseScore(
+      SOURCE.replace(
+        '<measure number="2"><note><rest/><duration>8</duration></note></measure>',
+        '<measure number="2"><attributes>' +
+          "<time><beats>6</beats><beat-type>8</beat-type></time></attributes>" +
+          "<note><rest/><duration>6</duration></note></measure>",
+      ),
+    );
+    const chart = emitChart(parsed.doc, planFor([bell("C", 0, 5)]), DORICO);
+    const chartId = chart.partIds[0] ?? "";
+
+    // 6/8 with divisions 2 is six eighths = three quarters = 6 divisions, not
+    // the 12 a beats-times-divisions reading would give.
+    const durations = tail(parsed.doc, chartId).map(
+      (measure) => measure.querySelector(":scope > note > duration")?.textContent,
+    );
+    expect(durations).toEqual(["8", "6"]);
     expect(await validateMusicXml(serializeScore(parsed))).toEqual([]);
   });
 });

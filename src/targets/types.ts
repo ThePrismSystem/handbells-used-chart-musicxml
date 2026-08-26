@@ -1,5 +1,3 @@
-import type { ChartPlan } from "../core/plan.js";
-
 export interface TargetProfile {
   readonly id: string;
   readonly label: string;
@@ -24,5 +22,4 @@ export interface TargetProfile {
    */
   readonly octaveVia: "clef" | "clef+transpose";
   /** Escape hatch for a target that needs genuine surgery. */
-  readonly postProcess?: (doc: Document, plan: ChartPlan) => void;
 }

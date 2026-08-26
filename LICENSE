@@ -17,3 +17,19 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+EXCEPTION — bundled typefaces
+
+The font files in public/fonts/ are not covered by the terms above. They are the
+work of their respective authors and are redistributed here under the SIL Open
+Font License 1.1, whose terms travel with them:
+
+  Spectral       Copyright 2017 The Spectral Project Authors
+                 public/fonts/Spectral-OFL.txt
+  IBM Plex Mono  Copyright (c) 2017 IBM Corp., Reserved Font Name "Plex"
+                 public/fonts/IBMPlexMono-OFL.txt
+
+Nothing in this LICENSE grants or withholds any right in those files; see
+public/fonts/README.md.
