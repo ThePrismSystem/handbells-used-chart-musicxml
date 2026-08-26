@@ -4,7 +4,8 @@
   --ink: #17181a;
   --muted: #6a6b65;
   --rule: #d5d4ca; /* hairline */
-  --rule-strong: #a9a89c; /* structural rules, input borders */
+  --rule-strong: #a9a89c; /* structural rules */
+  --control-border: #89887c; /* light: 3:1 on ground, panel and warn-bg */
   --accent: #1f4e5f; /* deep teal-ink: structure and the primary action */
   --warn-bg: #efece1;
 
@@ -19,7 +20,8 @@
     --ink: #eceada;
     --muted: #9a9c92;
     --rule: #32363a;
-    --rule-strong: #555a5f;
+    --rule-strong: #555a5f; /* structural rules */
+    --control-border: #6b7075; /* dark: 3:1 on ground, panel and warn-bg */
     --accent: #86b3c1;
     --warn-bg: #23262a;
   }
@@ -159,7 +161,7 @@ body {
 
 /* Square corners: the detail that keeps this reading as print, not a form. */
 input[type="file"] {
-  border: 1px solid var(--rule-strong);
+  border: 1px solid var(--control-border);
   border-radius: 0;
   background: var(--panel);
   color: var(--ink);
@@ -184,7 +186,7 @@ button.primary {
 .warning button {
   background: transparent;
   color: var(--ink);
-  border: 1px solid var(--rule-strong);
+  border: 1px solid var(--control-border);
 }
 
 /* Review panels: eyebrow-led sections in reading order, no card chrome. */
@@ -273,7 +275,7 @@ button.primary {
 
 .options-panel input[type="text"],
 .options-panel select {
-  border: 1px solid var(--rule-strong);
+  border: 1px solid var(--control-border);
   border-radius: 0;
   background: var(--panel);
   color: var(--ink);
@@ -293,7 +295,7 @@ button.primary {
 
 /* Always bordered, so the swatch stays visible whatever colour is chosen. */
 .swatch {
-  border: 1px solid var(--rule-strong);
+  border: 1px solid var(--control-border);
   padding: 0;
   width: 2.5rem;
   height: 2rem;

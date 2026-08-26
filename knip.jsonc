@@ -7,22 +7,5 @@
   "ignoreDependencies": [
     // Permanent: used by tests via the testing-library setup, not imported directly.
     "@testing-library/user-event",
-
-    // TEMPORARY — installed ahead of the code that consumes them, so knip
-    // would otherwise report them unused. DELETE each entry when its
-    // consumer lands, OR when that consumer is removed or abandoned before
-    // landing; leaving one here permanently blinds knip to that package
-    // going genuinely unused later.
-    //   @axe-core/playwright    -> remove when test/a11y/ imports it
-    //   @playwright/test        -> remove when test/a11y/ imports it
-    //   axe-core                -> remove when App.a11y.test.tsx imports it
-    //   eslint-plugin-jsx-a11y  -> remove when eslint.config.js registers it
-    //   vitest-axe              -> remove: its matcher does not typecheck under
-    //                              Vitest 4, so Task 23 drops the package
-    "@axe-core/playwright",
-    "@playwright/test",
-    "axe-core",
-    "eslint-plugin-jsx-a11y",
-    "vitest-axe",
   ],
 }
