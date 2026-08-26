@@ -1,6 +1,8 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["src/main.tsx", "vite.config.ts"],
+  // Test files are entry points so that src/test-support/, which only tests
+  // reach, does not read as unused code.
+  "entry": ["src/main.tsx", "vite.config.ts", "src/**/*.test.{ts,tsx}"],
   "project": ["src/**/*.{ts,tsx}"],
   "ignoreDependencies": [
     // Permanent: used by tests via the testing-library setup, not imported directly.
@@ -11,7 +13,6 @@
     // consumer lands, OR when that consumer is removed or abandoned before
     // landing; leaving one here permanently blinds knip to that package
     // going genuinely unused later.
-    //   xmllint-wasm            -> remove when src/test-support/validate-musicxml.ts imports it
     //   @axe-core/playwright    -> remove when test/a11y/ imports it
     //   @playwright/test        -> remove when test/a11y/ imports it
     //   axe-core                -> remove when vitest-axe wiring lands
@@ -22,6 +23,5 @@
     "axe-core",
     "eslint-plugin-jsx-a11y",
     "vitest-axe",
-    "xmllint-wasm",
   ],
 }
