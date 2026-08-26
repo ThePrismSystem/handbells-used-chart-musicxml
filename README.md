@@ -16,13 +16,18 @@ import MusicXML.
 ## The score never leaves your browser
 
 Every step — parsing, planning, inserting the chart, repackaging — runs as
-JavaScript on your own machine. Nothing is uploaded, nothing is stored, and there
-is no backend to send it to. Open your browser's network tab while you use it and
-you will see nothing leave the page.
+JavaScript on your own machine. Your file is never uploaded, never stored, and
+there is no backend that could receive it.
 
 This is deliberate. People run tools like this on other people's copyrighted
 arrangements, and that deserves saying plainly rather than burying in a privacy
 policy.
+
+The one thing the page does send is Vercel Web Analytics and Speed Insights: a
+page view, and the loading timings the browser measures for itself. Both go to a
+`/_vercel` endpoint on this same origin, neither sets a cookie, and neither
+carries your file, its name, or anything read out of it. Open your browser's
+network tab and that is all you will find alongside the page's own assets.
 
 ## Accepted formats
 
