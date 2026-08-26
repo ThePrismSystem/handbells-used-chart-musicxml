@@ -67,7 +67,11 @@ describe("the whole pipeline", () => {
     const secondRead = readScore(second.doc);
     const secondPlan = planFor(secondRead, options(secondRead));
 
-    expect(secondPlan.sections.map((s) => s.label)).toEqual(firstPlan.sections.map((s) => s.label));
+    // Comparing labels alone would only compare section kinds and distinct
+    // pitch counts, so a re-read that duplicated or reshuffled entries without
+    // changing those counts would pass a test named for full plan equality.
+    expect(secondPlan.sections).toEqual(firstPlan.sections);
+    expect(secondPlan.warnings).toEqual(firstPlan.warnings);
   });
 
   it("re-plans without re-parsing when a convention is overridden", () => {
@@ -95,7 +99,9 @@ describe("the whole pipeline", () => {
     const parsed = parseScore(pianoHandbells);
     const read = readScore(parsed.doc);
     const xml = applyChart(parsed, planFor(read, options(read)), "dorico");
-    expect(xml.startsWith("<?xml")).toBe(true);
+    // "preserves" means the declaration comes back as it went in, encoding
+    // included — not merely that some declaration is present.
+    expect(xml.startsWith(pianoHandbells.split("\n")[0] ?? "")).toBe(true);
   });
 
   it("leaves a score with no chartable notes alone", () => {
