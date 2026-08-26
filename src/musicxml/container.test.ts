@@ -105,11 +105,39 @@ describe("saveFile", () => {
     expect(decoder.decode(bytes.slice(38, 38 + MIMETYPE.length))).toBe(MIMETYPE);
   });
 
-  it("round-trips through the container", () => {
+  it("writes the expected zip entries", () => {
     const source = loadFile(makeMxl(), "a.mxl");
     const entries = unzipSync(saveFile(SCORE, source));
     expect(Object.keys(entries)).toContain("META-INF/container.xml");
     expect(new TextDecoder().decode(entries["score.xml"])).toBe(SCORE);
+  });
+
+  it("reads back what it wrote", () => {
+    const source = loadFile(makeMxl(), "a.mxl");
+    const reread = loadFile(saveFile(SCORE, source), "a.mxl");
+    expect(reread.kind).toBe("mxl");
+    expect(reread.rootPath).toBe(source.rootPath);
+    expect(reread.xml).toBe(SCORE);
+  });
+
+  it("round-trips a rootfile path containing XML metacharacters", () => {
+    // Reading unescapes entities, so writing must re-escape them. Without
+    // that, this container comes back out unparseable and the saved file
+    // cannot be reopened at all.
+    const path = 'Bach & "Sons".xml';
+    const bytes = zipSync({
+      mimetype: [strToU8(MIMETYPE), { level: 0 }],
+      "META-INF/container.xml": strToU8(
+        `<container><rootfiles>` +
+          `<rootfile full-path="Bach &amp; &quot;Sons&quot;.xml"/>` +
+          `</rootfiles></container>`,
+      ),
+      [path]: strToU8(SCORE),
+    });
+    const source = loadFile(bytes, "a.mxl");
+    expect(source.rootPath).toBe(path);
+    const reread = loadFile(saveFile(SCORE, source), "a.mxl");
+    expect(reread.xml).toBe(SCORE);
   });
 
   it("writes the score back to the path the container named", () => {

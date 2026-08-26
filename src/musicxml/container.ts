@@ -18,6 +18,15 @@ function isZip(bytes: Uint8Array): boolean {
   return bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
 }
 
+/** Escapes a value for use inside a double-quoted XML attribute. */
+function escapeAttribute(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
 function rootPathFrom(containerXml: string): string {
   const doc = new DOMParser().parseFromString(containerXml, "application/xml");
   if (doc.getElementsByTagName("parsererror").length > 0) {
@@ -65,7 +74,7 @@ export function saveFile(xml: string, source: LoadedFile): Uint8Array {
     [CONTAINER_PATH]: strToU8(
       `<?xml version="1.0" encoding="UTF-8"?>\n` +
         `<container><rootfiles>` +
-        `<rootfile full-path="${source.rootPath}" media-type="${MIMETYPE}+xml"/>` +
+        `<rootfile full-path="${escapeAttribute(source.rootPath)}" media-type="${MIMETYPE}+xml"/>` +
         `</rootfiles></container>\n`,
     ),
     [source.rootPath]: strToU8(xml),
