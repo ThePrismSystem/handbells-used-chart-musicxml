@@ -25,7 +25,7 @@ export function NoteheadTable({ counts, assignments, onAssign }: NoteheadTablePr
 
   return (
     <section className="panel notehead-panel">
-      <p className="eyebrow">Noteheads Found</p>
+      <h2 className="eyebrow">Noteheads Found</h2>
       {rows.length === 0 ? (
         <p>No notes were found in this file.</p>
       ) : (

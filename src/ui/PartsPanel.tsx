@@ -15,7 +15,7 @@ const CONVENTIONS: readonly { readonly value: OctaveConvention; readonly label: 
 export function PartsPanel({ parts, conventions, onChange }: PartsPanelProps) {
   return (
     <section className="panel parts-panel">
-      <p className="eyebrow">Parts Read</p>
+      <h2 className="eyebrow">Parts Read</h2>
       {parts.map((part) => {
         const convention = conventions.get(part.id) ?? part.convention;
         return (

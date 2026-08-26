@@ -46,4 +46,34 @@ describe("PartsPanel", () => {
     render(<PartsPanel parts={parts} conventions={conventions} onChange={vi.fn()} />);
     expect(screen.getByText("312")).toBeInTheDocument();
   });
+
+  it("falls back to the detected convention when it has not been overridden", () => {
+    const detectedAtBellName: PartInfo = {
+      id: "P3",
+      name: "Organ",
+      convention: "at-bell-name",
+      reason: "instrument-sound: keyboard.organ, but no <transpose> — pitches read as sounding",
+      noteCount: 20,
+    };
+    render(<PartsPanel parts={[detectedAtBellName]} conventions={new Map()} onChange={vi.fn()} />);
+    const group = screen.getByRole("group", { name: /organ/i });
+    expect(within(group).getByRole("radio", { name: /already sounding|bell name/i })).toBeChecked();
+  });
+
+  it("uses singular wording for exactly one note", () => {
+    const onePart: PartInfo = {
+      id: "P4",
+      name: "Solo",
+      convention: "written-octave-below",
+      reason: "no signal; assumed handbell convention",
+      noteCount: 1,
+    };
+    const { container } = render(
+      <PartsPanel parts={[onePart]} conventions={new Map()} onChange={vi.fn()} />,
+    );
+    // The count sits in its own element (see "shows each part's note count"
+    // above), so the agreement can only be asserted against the panel's
+    // combined text — and this pattern would fail against "1 notes read".
+    expect(container.textContent).toMatch(/1 note read/);
+  });
 });

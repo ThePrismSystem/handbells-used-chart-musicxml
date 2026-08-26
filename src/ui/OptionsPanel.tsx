@@ -24,7 +24,7 @@ function placeholderFor(plan: ChartPlan | null, kind: ChartKind): string {
 export function OptionsPanel({ settings, plan, onChange }: OptionsPanelProps) {
   return (
     <section className="panel options-panel">
-      <p className="eyebrow">Chart Options</p>
+      <h2 className="eyebrow">Chart Options</h2>
 
       <div className="field">
         <label htmlFor="bell-label">Handbells label</label>

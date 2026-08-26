@@ -80,26 +80,6 @@ body {
   color: var(--muted);
 }
 
-.review {
-  margin-bottom: 2.5rem;
-}
-
-.section {
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--rule);
-}
-
-.section:last-of-type {
-  border-bottom: none;
-}
-
-.section h3 {
-  margin: 0 0 0.35rem;
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 1.25rem;
-}
-
 .mono {
   font-family: var(--font-mono);
 }
@@ -329,7 +309,7 @@ button.primary {
   border-bottom: none;
 }
 
-.summary .section h2 {
+.summary .section h3 {
   margin: 0 0 0.5rem;
   font-family: var(--font-serif);
   font-weight: 600;

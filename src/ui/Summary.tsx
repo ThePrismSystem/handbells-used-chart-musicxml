@@ -44,7 +44,7 @@ export function Summary({ plan, hasExistingChart, unreadable }: SummaryProps) {
 
   return (
     <section className="panel summary">
-      <p className="eyebrow">Summary</p>
+      <h2 className="eyebrow">Summary</h2>
 
       {hasExistingChart && (
         <div className="warning">
@@ -57,7 +57,7 @@ export function Summary({ plan, hasExistingChart, unreadable }: SummaryProps) {
       ) : (
         plan.sections.map((section) => (
           <article key={section.kind} className="section">
-            <h2>{section.label}</h2>
+            <h3>{section.label}</h3>
             <p className="index mono">
               {chartOrder(section).map((entry, index) => (
                 <Fragment key={entry.name}>
