@@ -86,4 +86,60 @@ describe("App", () => {
     await upload(charted);
     expect(await screen.findByText(/already has a chart/i)).toBeInTheDocument();
   });
+
+  it("says how many notes an unassigned notehead cost, in agreement with the count", async () => {
+    // One note, so the sentence has to read "1 note ... was left off" — a
+    // message that says "1 note ... were left off" is the reason this asserts
+    // the whole sentence rather than just the digit.
+    await upload(pianoHandbells.replace("<notehead>diamond</notehead>", "<notehead>x</notehead>"));
+    expect(
+      await screen.findByText(
+        /1 note used a notehead that is not assigned to a chart and was left off the chart\./i,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("pluralises the unassigned-notehead warning for more than one note", async () => {
+    const twoIgnored = pianoHandbells
+      .replace("<notehead>diamond</notehead>", "<notehead>x</notehead>")
+      .replace(
+        "</measure>",
+        "<note><pitch><step>E</step><octave>5</octave></pitch><duration>2</duration>" +
+          "<voice>1</voice><type>quarter</type><notehead>x</notehead><staff>1</staff></note></measure>",
+      );
+    await upload(twoIgnored);
+    expect(
+      await screen.findByText(
+        /2 notes used a notehead that is not assigned to a chart and were left off the chart\./i,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("names the bells it dropped for being out of the handbell range", async () => {
+    // The chart's own rows above the treble staff reach C9, so C9 still has a
+    // place to go. D9 is the first bell with none — hence D8 written, which
+    // this part's octave-below convention names D9.
+    const tooHigh = pianoHandbells.replace(
+      "</measure>",
+      "<note><pitch><step>D</step><octave>8</octave></pitch><duration>2</duration>" +
+        "<voice>1</voice><type>quarter</type><staff>1</staff></note></measure>",
+    );
+    await upload(tooHigh);
+    // Naming the bell is the point of the warning: "some notes were out of
+    // range" would leave the arranger hunting for which.
+    expect(await screen.findByText(/out of the handbell range.*D9/i)).toBeInTheDocument();
+  });
+
+  it("reports out-of-range silver melody bells separately from handbells", async () => {
+    const lowSmb = pianoHandbells.replace(
+      "</measure>",
+      "<note><pitch><step>B</step><octave>3</octave></pitch><duration>2</duration>" +
+        "<voice>1</voice><type>quarter</type><notehead>la</notehead><staff>1</staff></note></measure>",
+    );
+    await upload(lowSmb);
+    // The two compasses differ, so a bell can be fine as a handbell and out of
+    // range as a silver melody bell. Folding them into one message would tell
+    // the arranger to transpose a note that is already where it belongs.
+    expect(await screen.findByText(/out of the silver melody bell range.*B4/i)).toBeInTheDocument();
+  });
 });

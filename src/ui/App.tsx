@@ -8,8 +8,11 @@ type Warning = ChartPlan["warnings"][number];
 
 function warningText(warning: Warning): string {
   switch (warning.type) {
-    case "ignored-notehead":
-      return `${String(warning.count)} note${warning.count === 1 ? "" : "s"} used a notehead that is not assigned to a chart and were left off it.`;
+    case "ignored-notehead": {
+      const noun = warning.count === 1 ? "note" : "notes";
+      const verb = warning.count === 1 ? "was" : "were";
+      return `${String(warning.count)} ${noun} used a notehead that is not assigned to a chart and ${verb} left off the chart.`;
+    }
     case "out-of-range":
       return `Out of the handbell range and left off the chart: ${warning.names.join(", ")}.`;
     case "smb-out-of-range":
