@@ -1,4 +1,4 @@
-const HEX = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
+const HEX = /^#?(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 
 /**
  * MusicXML's `color` type matches `#[\dA-F]{6}([\dA-F][\dA-F])?` — uppercase
@@ -15,7 +15,7 @@ export function normalizeColor(value: string | null | undefined): string | null 
   if (match === null) {
     return null;
   }
-  const digits = match[1] ?? "";
+  const digits = match[0].replace("#", "");
   const full =
     digits.length === 3 ? digits.replace(/./g, (character) => character + character) : digits;
   const upper = full.toUpperCase();

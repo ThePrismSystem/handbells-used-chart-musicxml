@@ -36,6 +36,18 @@ describe("buildPlan", () => {
     expect(plan.sections.map((s) => s.kind)).toEqual(["bells", "chimes", "smbs"]);
   });
 
+  it("labels each kind with its own default and count", () => {
+    const plan = buildPlan(
+      [bell("E", 0, 6, "la"), bell("D", 0, 6, "diamond"), bell("C", 0, 5)],
+      options(),
+    );
+    expect(plan.sections.map((s) => s.label)).toEqual([
+      "Handbells Used: 1",
+      "Handchimes Used: 1",
+      "SMBs Used: 1",
+    ]);
+  });
+
   it("counts physical bells in the label, so two spellings count once", () => {
     const plan = buildPlan([bell("G", 1, 5), bell("A", -1, 5)], options());
     expect(plan.sections[0]?.label).toBe("Handbells Used: 1");
@@ -103,7 +115,10 @@ describe("buildPlan", () => {
     // label rather than bracketing columns.
     const plan = buildPlan(
       [bell("E", 0, 6, "la")],
-      options({ requiredBellFirst: "C6", smbsOptional: true }),
+      // F6 (midi 89) sits ABOVE the E6 entry (88), so E6 would be optional if
+      // this range reached the SMB section at all. It must not: the assertion
+      // below is what proves the section gets an empty range, not this one.
+      options({ requiredBellFirst: "F6", smbsOptional: true }),
     );
     expect(plan.sections[0]?.optional).toEqual([]);
   });
