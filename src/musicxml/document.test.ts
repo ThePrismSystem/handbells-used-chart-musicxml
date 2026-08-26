@@ -38,16 +38,24 @@ describe("parseScore", () => {
 
   it("refuses malformed XML", () => {
     // DOMParser returns a <parsererror> document rather than throwing.
+    // The message matters: jsdom makes <parsererror> the ROOT element, so a
+    // regression that dropped the explicit check would still throw here, but
+    // would report the root as <parsererror> instead of naming the real fault.
     expect(() => parseScore("<score-partwise><oops></score-partwise>")).toThrow(ScoreParseError);
+    expect(() => parseScore("<score-partwise><oops></score-partwise>")).toThrow(/not valid XML/);
   });
 
   it("refuses a document that is not XML at all", () => {
     expect(() => parseScore("this is not xml")).toThrow(ScoreParseError);
+    expect(() => parseScore("this is not xml")).toThrow(/not valid XML/);
   });
 
   it("refuses a timewise score by name", () => {
+    // Assert the guidance, not the format name: the generic wrong-root message
+    // interpolates the root and so also contains "score-timewise". Only this
+    // phrase proves the dedicated branch — and its advice — still exists.
     expect(() => parseScore("<score-timewise><part-list/></score-timewise>")).toThrow(
-      /score-timewise/,
+      /re-export it as partwise/,
     );
   });
 
