@@ -21,5 +21,12 @@ export interface TargetProfile {
    * risks an importer counting the octave twice.
    */
   readonly octaveVia: "clef" | "clef+transpose";
-  /** Escape hatch for a target that needs genuine surgery. */
+  /**
+   * Octaves to shift a bell by to get the pitch written on the chart. In
+   * MusicXML <pitch> is the written pitch, so a bell named C6 is written C5
+   * under the 8va clef: -1. Dorico instead reads <pitch> as the sounding pitch
+   * and drops the notehead by the clef's octave change, which draws the whole
+   * chart an octave below the score, so it is handed the bell's own pitch: 0.
+   */
+  readonly writtenOctaveShift: -1 | 0;
 }

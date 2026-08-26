@@ -56,6 +56,10 @@ function scorePartFor(doc: Document, id: string, section: ChartSection): Element
   // name, so the part name is marked not to print. Dorico prints it anyway,
   // which is why each kind's name is its own rather than one shared marker.
   scorePart.append(el(doc, "part-name", CHART_PART_NAME[section.kind], { "print-object": "no" }));
+  // Dorico ignores print-object on part-name and prints it as the staff label
+  // anyway. part-name-display is the element that overrides what is drawn, and
+  // an empty one marked not to print leaves the chart staves unlabelled.
+  scorePart.append(el(doc, "part-name-display", undefined, { "print-object": "no" }));
 
   const instrument = el(doc, "score-instrument", undefined, { id: `${id}-I1` });
   instrument.append(el(doc, "instrument-name", INSTRUMENT_NAME[section.kind]));
@@ -126,6 +130,7 @@ function chartAttributes(
 function chartNote(
   doc: Document,
   section: ChartSection,
+  profile: TargetProfile,
   column: Column,
   staff: number,
   divisions: number,
@@ -136,8 +141,10 @@ function chartNote(
       note.append(el(doc, "chord"));
     }
 
-    // Bells are written an octave below their name, under the 8va clef above.
-    const written = addOctaves(entry.pitch, -1);
+    // Under the 8va clef a bell is written an octave below its name — unless
+    // the target lowers the notehead by that clef itself, in which case the
+    // bell's own pitch is what lands in the right place. See writtenOctaveShift.
+    const written = addOctaves(entry.pitch, profile.writtenOctaveShift);
     const pitch = el(doc, "pitch");
     pitch.append(el(doc, "step", written.step));
     if (written.alter !== 0) {
@@ -176,6 +183,7 @@ function paddingRest(doc: Document, staff: number, divisions: number): Element {
 function staffContent(
   doc: Document,
   section: ChartSection,
+  profile: TargetProfile,
   columns: readonly Column[],
   staff: number,
   from: number,
@@ -188,7 +196,7 @@ function staffContent(
     if (column === undefined || column.length === 0) {
       out.push(paddingRest(doc, staff, divisions));
     } else {
-      out.push(...chartNote(doc, section, column, staff, divisions));
+      out.push(...chartNote(doc, section, profile, column, staff, divisions));
     }
   }
   return out;
@@ -224,7 +232,16 @@ function chartMeasure(
     measure.append(label(doc, section.label));
   }
 
-  for (const note of staffContent(doc, section, section.treble, 1, from, count, divisions)) {
+  for (const note of staffContent(
+    doc,
+    section,
+    profile,
+    section.treble,
+    1,
+    from,
+    count,
+    divisions,
+  )) {
     measure.append(note);
   }
 
@@ -232,7 +249,16 @@ function chartMeasure(
     const backup = el(doc, "backup");
     backup.append(el(doc, "duration", String(count * divisions)));
     measure.append(backup);
-    for (const note of staffContent(doc, section, section.bass, 2, from, count, divisions)) {
+    for (const note of staffContent(
+      doc,
+      section,
+      profile,
+      section.bass,
+      2,
+      from,
+      count,
+      divisions,
+    )) {
       measure.append(note);
     }
   }

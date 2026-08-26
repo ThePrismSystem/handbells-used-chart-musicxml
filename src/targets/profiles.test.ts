@@ -11,18 +11,29 @@ describe("profiles", () => {
     expect(new Set(TARGETS.map((t) => t.id)).size).toBe(TARGETS.length);
   });
 
-  it("carries the two settings the Dorico gate measured", () => {
-    // Measured against Dorico, not chosen. With a whole chart in one bar
-    // Dorico prints its own naturals to cancel accidentals earlier in that
-    // bar, and it draws the chart staves on after the chart whatever
-    // <staff-details print-object="no"> asks for.
+  it("carries the settings the Dorico gate measured", () => {
+    // Measured against Dorico, not chosen. It draws the chart staves on after
+    // the chart whatever <staff-details print-object="no"> asks for, ignores
+    // <staff-size>, and lowers a notehead by the clef's octave change — so it
+    // is handed the bell's own pitch rather than the written one. One column
+    // per bar does not stop Dorico restating a cancelling natural, but it
+    // moves that restatement into a rule the reader can switch off.
     expect(DORICO.columnsPerMeasure).toBe(1);
     expect(DORICO.hideChartStavesAfterChart).toBe(false);
+    expect(DORICO.chartStaffSizePercent).toBeNull();
+    expect(DORICO.writtenOctaveShift).toBe(0);
   });
 
-  it("leaves the settings the gate did not settle where they started", () => {
+  it("keeps the generic target on MusicXML's own reading of pitch", () => {
+    // <pitch> is the written pitch, so the bell is written an octave below its
+    // name and the 8va clef names it back. Unverified against any one
+    // application, which is what makes it the generic target rather than one.
+    expect(GENERIC.writtenOctaveShift).toBe(-1);
+    expect(GENERIC.octaveVia).toBe("clef");
+  });
+
+  it("leaves the one setting the gate did not reach where it started", () => {
     expect(DORICO.octaveVia).toBe("clef");
-    expect(DORICO.chartStaffSizePercent).toBe(80);
   });
 
   it("keeps the generic target free of application-specific hints", () => {

@@ -99,6 +99,17 @@ describe("emitChart", () => {
     expect(name?.getAttribute("print-object")).toBe("no");
   });
 
+  it("leaves the chart staves unlabelled", () => {
+    // print-object on part-name is not enough on its own: Dorico prints the
+    // part name as the staff label regardless, and part-name-display is the
+    // element that overrides what is drawn. The chart's label is the direction
+    // above the staves, so a margin label is a second, redundant one.
+    const { doc } = emitted([bell("C", 0, 5)]);
+    const display = doc.querySelector("part-list > score-part > part-name-display");
+    expect(display?.getAttribute("print-object")).toBe("no");
+    expect(display?.children).toHaveLength(0);
+  });
+
   it("names each chart part for its own instrument", () => {
     // Dorico prints part-name as the staff label whatever print-object says.
     // One shared name leaves it labelling the chimes "Handbells Used Chart 2".
@@ -165,10 +176,21 @@ describe("emitChart", () => {
     expect(doc.querySelector('part[id="HBC1"] accidental')?.textContent).toBe("flat-flat");
   });
 
-  it("writes bells an octave below their name, under an 8va clef", () => {
-    // C5 the bell is written C4 with <clef-octave-change>1</clef-octave-change>.
-    const { doc } = emitted([bell("C", 0, 5)]);
+  it("writes bells an octave below their name under writtenOctaveShift -1", () => {
+    // MusicXML's own reading: <pitch> is the written pitch, so the bell C5 is
+    // written C4 and <clef-octave-change>1</clef-octave-change> names it back.
+    const { doc } = emitted([bell("C", 0, 5)], GENERIC);
     expect(doc.querySelector('part[id="HBC1"] note > pitch > octave')?.textContent).toBe("4");
+    expect(doc.querySelector('part[id="HBC1"] clef > clef-octave-change')?.textContent).toBe("1");
+  });
+
+  it("writes bells at their own pitch for Dorico, which lowers them by the clef", () => {
+    // Dorico reads <pitch> as sounding and drops the notehead by the clef's
+    // octave change, so the written pitch draws the chart an octave below the
+    // score. Handing it the bell's own pitch lands the notehead where the
+    // score writes the same note. The clef keeps its 8 either way.
+    const { doc } = emitted([bell("C", 0, 5)]);
+    expect(doc.querySelector('part[id="HBC1"] note > pitch > octave')?.textContent).toBe("5");
     expect(doc.querySelector('part[id="HBC1"] clef > clef-octave-change')?.textContent).toBe("1");
   });
 
@@ -313,13 +335,34 @@ describe("emitChart", () => {
   });
 
   it("emits a schema-valid chart for the generic target", async () => {
-    // GENERIC is a target the user can pick, and it is the only profile with
-    // chartStaffSizePercent null — the arm that omits <staff-details> entirely.
-    // Every other test here runs DORICO, so without this nothing ever emits
-    // the generic target at all, let alone validates it.
-    const { doc, xml } = emitted([bell("C", 0, 5), bell("D", 0, 6, "diamond")], GENERIC);
+    // GENERIC is a target the user can pick, and every other test here runs
+    // DORICO, so without this nothing ever emits the generic target at all,
+    // let alone validates it.
+    const { xml } = emitted([bell("C", 0, 5), bell("D", 0, 6, "diamond")], GENERIC);
     expect(await validateMusicXml(xml)).toEqual([]);
-    expect(doc.querySelector('part[id="HBC1"] staff-size')).toBeNull();
+  });
+
+  it("omits <staff-size> where no profile asks for one", () => {
+    // Both shipped profiles leave it null: Dorico ignores <staff-size>, and
+    // the generic target leaves sizing to whatever opens the file.
+    for (const profile of [DORICO, GENERIC]) {
+      const { doc } = emitted([bell("C", 0, 5)], profile);
+      expect(doc.querySelector('part[id="HBC1"] staff-size')).toBeNull();
+    }
+  });
+
+  it("sizes the chart staves when a profile asks for it", async () => {
+    // The flag is the scaffolding for a target that does honour <staff-size>,
+    // and no shipped profile sets it, so nothing else reaches this arm.
+    const { doc, xml } = emitted([bell("C", 0, 4), bell("D", 0, 6)], {
+      ...DORICO,
+      chartStaffSizePercent: 70,
+    });
+    expect(await validateMusicXml(xml)).toEqual([]);
+    const sizes = [...doc.querySelectorAll('part[id="HBC1"] staff-details > staff-size')].map(
+      (size) => size.textContent,
+    );
+    expect(sizes).toEqual(["70", "70"]);
   });
 
   it("omits the hidden chart staves for Dorico, which ignores the hint", async () => {

@@ -68,6 +68,12 @@ The app infers the convention per part from the instrument sound and any
 per part. Getting this wrong shifts the entire chart by an octave, which is why it
 is shown rather than assumed.
 
+The chart itself is written under an 8va clef, so a bell's notehead sits where the
+score writes the same note. What `<pitch>` has to carry to land it there depends
+on the target: MusicXML's own reading is the written pitch, which is what the
+generic target emits, while Dorico lowers a notehead by the clef's octave change
+and so is handed the bell's own pitch instead.
+
 ## Known limitations
 
 - **Dorico draws the chart staves on after the chart, empty.**
@@ -77,6 +83,15 @@ is shown rather than assumed.
   → Vertical Spacing → Staff Visibility) to take the empty staves off the page.
   The Generic MusicXML target still emits the hint, for applications that honour
   it.
+- **Dorico ignores `<staff-size>`.** The chart staves come in at the same size as
+  the music. The Dorico target no longer asks for a smaller one; set it in Dorico
+  instead (Layout Options → Players → Staff size) if you want the chart reduced.
+- **Dorico restates a cancelling natural in the bar after an accidental.** A
+  chart holding both Eb6 and E6 prints a natural on the E. The Dorico target
+  gives each bell a bar of its own, which turns that from a same-bar
+  cancellation — which no engraver can suppress — into Dorico's own next-bar
+  restatement, and that one is a setting: Notation Options → Accidentals →
+  Restatement of accidentals.
 - **A chart round-tripped through another application may lose its markers.** The
   chart is marked with a `<miscellaneous-field>` and a part name. If an
   application drops both on re-export, a re-run will not recognise the existing
