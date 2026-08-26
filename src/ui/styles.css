@@ -1,0 +1,208 @@
+:root {
+  --ground: #f6f5f1; /* warm-neutral paper, deliberately not cream */
+  --panel: #fffffe;
+  --ink: #17181a;
+  --muted: #6a6b65;
+  --rule: #d5d4ca; /* hairline */
+  --rule-strong: #a9a89c; /* structural rules, input borders */
+  --accent: #1f4e5f; /* deep teal-ink: structure and the primary action */
+  --warn-bg: #efece1;
+
+  --font-serif: "Spectral", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #16181a;
+    --panel: #1d2023;
+    --ink: #eceada;
+    --muted: #9a9c92;
+    --rule: #32363a;
+    --rule-strong: #555a5f;
+    --accent: #86b3c1;
+    --warn-bg: #23262a;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 4rem;
+}
+
+/* Masthead: the edition's front matter. */
+.masthead {
+  padding-bottom: 1.25rem;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 2rem;
+}
+
+.masthead h1 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.masthead .summary {
+  margin: 0.4rem 0 0;
+  font-style: italic;
+  color: var(--muted);
+}
+
+/* Eyebrow section headings: the content outranks its own label. */
+.eyebrow {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.review {
+  margin-bottom: 2.5rem;
+}
+
+.section {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.section:last-of-type {
+  border-bottom: none;
+}
+
+.section h3 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Counts are literal, aligned data: IBM Plex Mono with tabular figures. */
+.mono,
+.meta {
+  font-variant-numeric: tabular-nums;
+}
+
+.warning {
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+}
+
+.warning p {
+  margin: 0.25rem 0;
+}
+
+.warning .eyebrow {
+  margin-bottom: 0.35rem;
+}
+
+.warning button {
+  margin-top: 0.5rem;
+}
+
+/* Controls: one footer row, labels stacked over inputs, primary action
+   right-aligned at the end of the row. */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule-strong);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.file-field {
+  border: 1px dashed transparent;
+  padding: 0.25rem;
+  margin: -0.25rem;
+}
+
+.file-field.dragging {
+  border-color: var(--accent);
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* Square corners: the detail that keeps this reading as print, not a form. */
+input[type="file"] {
+  border: 1px solid var(--rule-strong);
+  border-radius: 0;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-serif);
+}
+
+button {
+  border-radius: 0;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  padding: 0.6rem 1.25rem;
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--panel);
+  border: 1px solid var(--accent);
+}
+
+.warning button {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--rule-strong);
+}
