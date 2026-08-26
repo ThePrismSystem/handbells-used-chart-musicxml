@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import pianoHandbells from "../../test/fixtures/piano-handbells.musicxml?raw";
 
-import App from "./App.js";
+import { App } from "./App.js";
 
 const upload = async (contents = pianoHandbells, name = "arrangement.musicxml") => {
   const user = userEvent.setup();

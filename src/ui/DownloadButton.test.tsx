@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import DownloadButton from "./DownloadButton.js";
+import { DownloadButton } from "./DownloadButton.js";
 
 const stubObjectUrl = () => {
   const createObjectURL = vi.fn(() => "blob:stub");

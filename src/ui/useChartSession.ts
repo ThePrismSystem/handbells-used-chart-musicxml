@@ -13,13 +13,9 @@ import type { LoadedFile } from "../musicxml/container.js";
 import type { ParsedScore } from "../musicxml/document.js";
 import type { ReadResult } from "../musicxml/read.js";
 
-// Not exported until Task 22's NoteheadTable imports it: knip fails an export
-// nothing imports, and a @public tag would silence that check permanently.
-type Assignment = ChartKind | "ignore";
+export type Assignment = ChartKind | "ignore";
 
-// Not exported until Task 22's OptionsPanel imports it: knip fails an export
-// nothing imports, and a @public tag would silence that check permanently.
-interface ChartSettings {
+export interface ChartSettings {
   readonly bellLabel: string;
   readonly chimeLabel: string;
   readonly smbLabel: string;

@@ -7,7 +7,7 @@ interface DownloadButtonProps {
  * URL: a plan built from live options must never go stale behind an <a
  * download> whose href was captured on an earlier render.
  */
-export default function DownloadButton({ buildDownload }: DownloadButtonProps) {
+export function DownloadButton({ buildDownload }: DownloadButtonProps) {
   const handleClick = () => {
     const result = buildDownload();
     if (result === null) {

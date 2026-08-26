@@ -13,7 +13,7 @@ interface DropZoneProps {
  * decoration on top of it, never a replacement — a keyboard user must be
  * able to reach the same input and its label.
  */
-export default function DropZone({ onFile }: DropZoneProps) {
+export function DropZone({ onFile }: DropZoneProps) {
   const [dragging, setDragging] = useState(false);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {

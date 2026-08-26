@@ -1,27 +1,28 @@
-import DownloadButton from "./DownloadButton.js";
-import DropZone from "./DropZone.js";
+import { DownloadButton } from "./DownloadButton.js";
+import { DropZone } from "./DropZone.js";
+import { NoteheadTable } from "./NoteheadTable.js";
+import { OptionsPanel } from "./OptionsPanel.js";
+import { PartsPanel } from "./PartsPanel.js";
+import { Summary } from "./Summary.js";
 import { useChartSession } from "./useChartSession.js";
 
-import type { ChartPlan } from "../core/plan.js";
-
-type Warning = ChartPlan["warnings"][number];
-
-function warningText(warning: Warning): string {
-  switch (warning.type) {
-    case "ignored-notehead": {
-      const noun = warning.count === 1 ? "note" : "notes";
-      const verb = warning.count === 1 ? "was" : "were";
-      return `${String(warning.count)} ${noun} used a notehead that is not assigned to a chart and ${verb} left off the chart.`;
-    }
-    case "out-of-range":
-      return `Out of the handbell range and left off the chart: ${warning.names.join(", ")}.`;
-    case "smb-out-of-range":
-      return `Out of the silver melody bell range and left off the chart: ${warning.names.join(", ")}.`;
-  }
-}
-
-export default function App() {
-  const { status, fileName, error, read, plan, loadFile, buildDownload, reset } = useChartSession();
+export function App() {
+  const {
+    status,
+    fileName,
+    error,
+    read,
+    plan,
+    assignments,
+    conventions,
+    settings,
+    loadFile,
+    assign,
+    setConvention,
+    update,
+    buildDownload,
+    reset,
+  } = useChartSession();
 
   const handleFile = (file: File) => {
     void loadFile(file);
@@ -55,35 +56,20 @@ export default function App() {
         )}
 
         {status === "ready" && plan !== null && read !== null && (
-          <section className="review">
-            <h2 className="eyebrow">Review</h2>
-
-            {read.existingChart !== null && (
-              <div className="warning">
-                <p>This score already has a chart; downloading will replace it.</p>
-              </div>
-            )}
-
-            {plan.sections.map((section) => (
-              <article key={section.kind} className="section">
-                <h3 style={section.color === null ? undefined : { color: section.color }}>
-                  {section.label}
-                </h3>
-                <p className="mono meta">
-                  notehead “{section.notehead}” · {section.columns} column
-                  {section.columns === 1 ? "" : "s"}
-                </p>
-              </article>
-            ))}
-
-            {plan.warnings.length > 0 && (
-              <div className="warning">
-                {plan.warnings.map((warning) => (
-                  <p key={warning.type}>{warningText(warning)}</p>
-                ))}
-              </div>
-            )}
-          </section>
+          <>
+            <NoteheadTable
+              counts={read.noteheadCounts}
+              assignments={assignments}
+              onAssign={assign}
+            />
+            <PartsPanel parts={read.parts} conventions={conventions} onChange={setConvention} />
+            <OptionsPanel settings={settings} plan={plan} onChange={update} />
+            <Summary
+              plan={plan}
+              hasExistingChart={read.existingChart !== null}
+              unreadable={read.unreadable}
+            />
+          </>
         )}
       </main>
 

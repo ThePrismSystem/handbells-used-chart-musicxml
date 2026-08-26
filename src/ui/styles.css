@@ -206,3 +206,145 @@ button.primary {
   color: var(--ink);
   border: 1px solid var(--rule-strong);
 }
+
+/* Review panels: eyebrow-led sections in reading order, no card chrome. */
+.panel {
+  margin-bottom: 2.5rem;
+}
+
+/* Notehead table: hairline rows, tabular counts, no zebra striping. */
+.notehead-panel table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.notehead-panel th,
+.notehead-panel td {
+  padding: 0.5rem 0.75rem 0.5rem 0;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+}
+
+.notehead-panel thead th {
+  border-bottom: 2px solid var(--rule-strong);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.notehead-panel td.count {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.assign-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+.assign-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+/* Parts panel: one fieldset per part, no default browser chrome. */
+.parts-panel .part {
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  padding: 1rem 0;
+  margin: 0;
+}
+
+.parts-panel .part:last-of-type {
+  border-bottom: none;
+}
+
+.parts-panel legend {
+  padding: 0;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.parts-panel .reason {
+  margin: 0.35rem 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.convention-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+/* Options panel: label fields, colour swatches, target select. */
+.options-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem 2rem;
+}
+
+.options-panel input[type="text"],
+.options-panel select {
+  border: 1px solid var(--rule-strong);
+  border-radius: 0;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0.4rem 0.6rem;
+  font-family: var(--font-serif);
+}
+
+.checkbox-field label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-transform: none;
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+/* Always bordered, so the swatch stays visible whatever colour is chosen. */
+.swatch {
+  border: 1px solid var(--rule-strong);
+  padding: 0;
+  width: 2.5rem;
+  height: 2rem;
+}
+
+/* Summary: the continuous bell index, a catalogue of incipits. */
+.summary .section {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.summary .section:last-of-type {
+  border-bottom: none;
+}
+
+.summary .section h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.summary .index {
+  margin: 0;
+  line-height: 1.8;
+}
+
+.summary .name {
+  white-space: nowrap;
+}
+
+.summary .dot {
+  color: var(--rule-strong);
+}
