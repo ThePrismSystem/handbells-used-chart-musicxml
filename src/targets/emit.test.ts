@@ -105,6 +105,13 @@ describe("emitChart", () => {
     const first = doc.querySelector("score-partwise > part > measure");
     expect(first?.getAttribute("implicit")).toBe("yes");
     expect(first?.getAttribute("number")).toBe("0");
+    // "the piece is not renumbered" is the actual guarantee, and asserting it
+    // on the chart's own measure does not check it: the music's measures are
+    // what must keep their original numbers after a bar is prepended.
+    const music = [...doc.querySelectorAll('part[id="P1"] > measure')].map((m) =>
+      m.getAttribute("number"),
+    );
+    expect(music).toEqual(["0", "1", "2"]);
   });
 
   it("breaks the system before the music", () => {
@@ -180,6 +187,9 @@ describe("emitChart", () => {
     const { doc } = emitted([bell("C", 0, 5)]);
     const words = doc.querySelector('part[id="HBC1"] direction words');
     expect(words?.textContent).toBe("Handbells Used: 1");
+    // "above" is half of what this test's name promises, and it is the half
+    // that decides whether the label collides with the staff it labels.
+    expect(words?.closest("direction")?.getAttribute("placement")).toBe("above");
   });
 
   it("hides the chart staves from the first measure of the music", () => {
@@ -227,6 +237,29 @@ describe("emitChart", () => {
     expect(await validateMusicXml(xml)).toEqual([]);
     expect(chart.measures).toBe(3);
     expect(doc.querySelectorAll('part[id="P1"] > measure')).toHaveLength(5);
+  });
+
+  it("keeps every column when the split leaves a short final measure", async () => {
+    // Three columns at two per measure: the second measure holds one column,
+    // fewer than the <time> declared in the first. That is legal only because
+    // every chart measure is implicit, which is MusicXML's own mechanism for a
+    // bar whose duration does not match the governing time signature. The
+    // even-split test above never reaches this branch, so a column silently
+    // dropped from the short measure would go unnoticed.
+    const { doc, chart, xml } = emitted([bell("C", 0, 6), bell("E", 0, 6), bell("G", 0, 6)], {
+      ...DORICO,
+      columnsPerMeasure: 2,
+    });
+    expect(await validateMusicXml(xml)).toEqual([]);
+    expect(chart.measures).toBe(2);
+
+    const measures = [...doc.querySelectorAll('part[id="HBC1"] > measure')].slice(0, 2);
+    expect(measures.every((m) => m.getAttribute("implicit") === "yes")).toBe(true);
+    // All three bells survive the uneven split, two then one.
+    const names = [...doc.querySelectorAll('part[id="HBC1"] note > pitch > step')].map(
+      (s) => s.textContent,
+    );
+    expect(names).toEqual(["C", "E", "G"]);
   });
 
   it("adds a transpose only under octaveVia clef+transpose", () => {
