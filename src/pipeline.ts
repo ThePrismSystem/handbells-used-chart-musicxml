@@ -3,6 +3,7 @@ import { resolveBells } from "./core/resolve.js";
 import { cloneScore, serializeScore } from "./musicxml/document.js";
 import { removeChart, writeMarker } from "./musicxml/marker.js";
 import { emitChart } from "./targets/emit.js";
+import { emitChartFlow } from "./targets/flow.js";
 import { targetById } from "./targets/profiles.js";
 
 import type { ChartPlan, PlanOptions } from "./core/plan.js";
@@ -37,4 +38,34 @@ export function applyChart(parsed: ParsedScore, plan: ChartPlan, targetId: strin
     writeMarker(doc, chart);
   }
   return serializeScore(parsed, doc);
+}
+
+/**
+ * What the target wants the user to end up with. "score" is their file back
+ * with the chart in it; "flow" is the chart alone, to import into a project
+ * they already have open.
+ */
+export type ChartOutput =
+  | { readonly kind: "score"; readonly xml: string }
+  | { readonly kind: "flow"; readonly xml: string };
+
+/** Returns null when a plan holds no bells, so there is nothing to hand over. */
+export function buildChart(
+  parsed: ParsedScore,
+  plan: ChartPlan,
+  targetId: string,
+): ChartOutput | null {
+  const profile = targetById(targetId);
+
+  if (profile.output === "flow") {
+    const xml = emitChartFlow(plan, profile);
+    return xml === null ? null : { kind: "flow", xml };
+  }
+
+  // Rewriting the score to add nothing to it is a download whose bytes match
+  // the file the user already has.
+  if (plan.sections.length === 0) {
+    return null;
+  }
+  return { kind: "score", xml: applyChart(parsed, plan, targetId) };
 }

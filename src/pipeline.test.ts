@@ -7,7 +7,7 @@ import twoPartBellsAndChimes from "../test/fixtures/two-part-bells-and-chimes.mu
 import { DEFAULT_HEAD_MAPPING } from "./core/collect.js";
 import { parseScore, serializeScore } from "./musicxml/document.js";
 import { readScore } from "./musicxml/read.js";
-import { applyChart, defaultConventions, planFor } from "./pipeline.js";
+import { applyChart, buildChart, defaultConventions, planFor } from "./pipeline.js";
 import { validateMusicXml } from "./test-support/validate-musicxml.js";
 
 const options = (read: ReturnType<typeof readScore>) => ({
@@ -182,5 +182,50 @@ describe("defaultConventions", () => {
     expect(conventions.size).toBe(read.parts.length);
     expect(conventions.get("P1")).toBe("written-octave-below");
     expect(conventions.get("P2")).toBe("at-bell-name");
+  });
+});
+
+describe("buildChart", () => {
+  const built = (source: string, targetId: string) => {
+    const parsed = parseScore(source);
+    const read = readScore(parsed.doc);
+    const plan = planFor(read, { ...options(read), targetId });
+    return buildChart(parsed, plan, targetId);
+  };
+
+  it("writes the chart alone for a target that imports it as a flow", async () => {
+    // Dorico's whole reason for this mode: the score is finished by the time a
+    // used chart is made, so it must not come back through MusicXML at all.
+    const output = built(pianoHandbells, "dorico");
+    expect(output?.kind).toBe("flow");
+    expect(await validateMusicXml(output?.xml ?? "")).toEqual([]);
+
+    const doc = parseScore(output?.xml ?? "").doc;
+    const names = [...doc.querySelectorAll("part-list > score-part > part-name")].map(
+      (name) => name.textContent,
+    );
+    expect(names).toEqual(["Handbells Used Chart", "Handchimes Used Chart"]);
+  });
+
+  it("writes the whole score back for a target that inserts", async () => {
+    const output = built(pianoHandbells, "generic");
+    expect(output?.kind).toBe("score");
+    expect(await validateMusicXml(output?.xml ?? "")).toEqual([]);
+    expect(parseScore(output?.xml ?? "").doc.querySelector('part[id="P1"]')).not.toBeNull();
+  });
+
+  it("has nothing to hand over when the score uses no bells", () => {
+    // Both arms: the flow target cannot write a document with no parts, and
+    // insert target would otherwise hand back a copy of the input.
+    const empty = `<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1"><measure number="1">
+    <attributes><divisions>1</divisions></attributes>
+    <note><rest/><duration>4</duration></note>
+  </measure></part>
+</score-partwise>`;
+    expect(built(empty, "dorico")).toBeNull();
+    expect(built(empty, "generic")).toBeNull();
   });
 });

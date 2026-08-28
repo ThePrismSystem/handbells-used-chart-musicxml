@@ -3,6 +3,9 @@ import type { TargetProfile } from "./types.js";
 export const DORICO: TargetProfile = {
   id: "dorico",
   label: "Dorico",
+  // A used chart is made once the score is finished, so re-importing the score
+  // would throw away the engraving it already has. The chart travels alone.
+  output: "flow",
   // Every value below except systemBreakAfterChart and implicitMeasureNumber
   // was measured against Dorico rather than chosen. Dorico ignores
   // <staff-details print-object="no"> and <staff-size> alike, so emitting
@@ -24,6 +27,8 @@ export const DORICO: TargetProfile = {
 export const GENERIC: TargetProfile = {
   id: "generic",
   label: "Generic MusicXML",
+  // Flows are Dorico's idea. Anything else gets the chart in the score.
+  output: "insert",
   hideChartStavesAfterChart: true,
   systemBreakAfterChart: true,
   chartStaffSizePercent: null,

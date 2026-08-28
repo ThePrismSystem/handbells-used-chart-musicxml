@@ -97,22 +97,56 @@ describe("useChartSession", () => {
     });
   });
 
-  it("builds a download named after the input", async () => {
+  it("offers the chart and its setup script for Dorico", async () => {
+    // Dorico's target writes the chart as its own file to import, so the score
+    // is never rewritten and never comes back.
     const result = await loaded();
-    const download = result.current.buildDownload();
-    expect(download?.filename).toBe("arrangement-with-chart.musicxml");
-    expect(download?.blob.size).toBeGreaterThan(0);
+    const downloads = result.current.buildDownloads();
+    expect(downloads.map((d) => d.filename)).toEqual([
+      "arrangement-chart.musicxml",
+      "dorico-chart-setup.lua",
+    ]);
+    for (const download of downloads) {
+      expect(download.blob.size).toBeGreaterThan(0);
+    }
+  });
+
+  it("offers the whole score back for a target that inserts", async () => {
+    const result = await loaded();
+    act(() => {
+      result.current.update({ targetId: "generic" });
+    });
+    const downloads = result.current.buildDownloads();
+    expect(downloads.map((d) => d.filename)).toEqual(["arrangement-with-chart.musicxml"]);
+    expect(downloads[0]?.blob.size).toBeGreaterThan(0);
+  });
+
+  it("offers nothing once every notehead is ignored", async () => {
+    // Ready, loaded, and still nothing to hand over: the one path where the
+    // session is healthy and the answer is still no. Reached the way a user
+    // reaches it, by turning every notehead off in the panel.
+    const result = await loaded();
+    act(() => {
+      for (const head of result.current.assignments.keys()) {
+        result.current.assign(head, "ignore");
+      }
+    });
+    expect(result.current.status).toBe("ready");
+    expect(result.current.plan?.sections).toHaveLength(0);
+    expect(result.current.buildDownloads()).toEqual([]);
   });
 
   it("builds no download before a file is loaded", () => {
     const { result } = renderHook(() => useChartSession());
-    expect(result.current.buildDownload()).toBeNull();
+    expect(result.current.buildDownloads()).toEqual([]);
   });
 
   it("notices that the score already has a chart", async () => {
     const first = await loaded();
-    const download = first.current.buildDownload();
-    const text = await download?.blob.text();
+    act(() => {
+      first.current.update({ targetId: "generic" });
+    });
+    const text = await first.current.buildDownloads()[0]?.blob.text();
     const second = await loaded(text ?? "");
     // read is null when a load fails, and `null?.existingChart` is undefined,
     // which satisfies not.toBeNull() — so a score that never loaded would pass
@@ -134,6 +168,6 @@ describe("useChartSession", () => {
     expect(result.current.read).toBeNull();
     expect(result.current.plan).toBeNull();
     expect(result.current.fileName).toBeNull();
-    expect(result.current.buildDownload()).toBeNull();
+    expect(result.current.buildDownloads()).toEqual([]);
   });
 });

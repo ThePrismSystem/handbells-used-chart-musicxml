@@ -44,9 +44,12 @@ describe("App", () => {
     expect(await screen.findByText("arrangement.musicxml")).toBeInTheDocument();
   });
 
-  it("offers a download once a file is read", async () => {
+  it("offers the chart and its setup script once a file is read", async () => {
+    // The default target is Dorico, which hands over two files rather than a
+    // rewritten score: the chart to import, and the script that lays it out.
     await upload();
-    expect(await screen.findByRole("button", { name: /download/i })).toBeEnabled();
+    expect(await screen.findByRole("button", { name: "Download the chart" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Download the setup script" })).toBeEnabled();
   });
 
   it("shows no download before a file is read", () => {

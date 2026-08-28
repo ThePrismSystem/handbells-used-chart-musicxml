@@ -1,8 +1,8 @@
 # handbells-used-chart-musicxml
 
-Adds a **handbells / handchimes / silver melody bells used chart** to a MusicXML
-score, in the browser. Upload a file, check what it read, download the score with
-the chart inserted.
+Builds a **handbells / handchimes / silver melody bells used chart** from a
+MusicXML score, in the browser. Upload a file, check what it read, download the
+chart.
 
 ## Why this exists
 
@@ -13,9 +13,31 @@ a Dorico script can do at all. Working on the file instead of inside the
 application sidesteps that — and covers any notation program that can export and
 import MusicXML.
 
+## What you get back
+
+Two targets, because two applications want the chart delivered differently.
+
+**Dorico** gets the chart as **its own small MusicXML file, plus a Lua setup
+script** — and never sees your score again. A used chart is made once the piece
+is finished, so re-importing the whole score would throw away the engraving you
+have already done. Instead:
+
+1. Export your score as MusicXML. Leave the Dorico project open and untouched.
+2. Upload that export here and download the two files.
+3. In your project, `File > Import > MusicXML`, pick the chart file, and choose
+   **Create All New Players**. It arrives as a new flow.
+4. Drag the chart flow to the top of the Flows panel in Setup mode.
+5. Run the setup script: `Script > Run Script`.
+
+Your score is read, never written. The chart is a new file that stands alone.
+
+**Generic MusicXML** gets the old behaviour: your score back with the chart
+inserted at the front, as one file. Right for any application without Dorico's
+flows, and wrong for Dorico, where the round trip costs you your layout.
+
 ## The score never leaves your browser
 
-Every step — parsing, planning, inserting the chart, repackaging — runs as
+Every step — parsing, planning, building the chart, repackaging — runs as
 JavaScript on your own machine. Your file is never uploaded, never stored, and
 there is no backend that could receive it.
 
@@ -31,8 +53,11 @@ network tab and that is all you will find alongside the page's own assets.
 
 ## Accepted formats
 
-`.musicxml`, `.xml`, and `.mxl` (the zipped container). The file comes back out in
-the format it went in.
+In: `.musicxml`, `.xml`, and `.mxl` (the zipped container).
+
+Out: the Dorico target writes plain `.musicxml`, since the chart is a new file
+rather than yours. The generic target returns your score in the format it
+arrived in.
 
 ## What it charts
 
@@ -76,13 +101,21 @@ and so is handed the bell's own pitch instead.
 
 ## Known limitations
 
-- **Dorico draws the chart staves on after the chart, empty.**
-  `<staff-details print-object="no">` is documented for exactly this purpose, but
-  honouring it is the importer's choice and Dorico does not. The Dorico target no
-  longer emits it; turn on Dorico's own Hide Empty Staves setting (Layout Options
-  → Vertical Spacing → Staff Visibility) to take the empty staves off the page.
-  The Generic MusicXML target still emits the hint, for applications that honour
-  it.
+- **The setup script cannot yet make two of the settings it needs.** Dorico's
+  MusicXML import discards layout and re-engraves, so the chart file cannot
+  carry any of it — that is what the script is for. Two of its settings have no
+  documented command, and both are in Layout Options → Page Setup → Flows:
+  _Allow on existing page_, without which the music starts on its own page
+  instead of continuing under the chart; and _Show Flow Headings → Never_, since
+  going from one flow to two can print a heading above your music that was never
+  there. Set them by hand, or record them with Script → Start Recording Script
+  and paste the result into the script. Guessing the option keys would produce a
+  script that looked like it worked and silently did nothing.
+- **Chart staves may need hiding in applications that insert.** For the generic
+  target the chart parts run empty through the piece, and
+  `<staff-details print-object="no">` asks for them to be hidden — but honouring
+  it is the importer's choice. Dorico does not, which is one of the reasons its
+  target no longer inserts at all.
 - **Dorico ignores `<staff-size>`.** The chart staves come in at the same size as
   the music. The Dorico target no longer asks for a smaller one; set it in Dorico
   instead (Layout Options → Players → Staff size) if you want the chart reduced.

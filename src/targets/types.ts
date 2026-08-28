@@ -1,6 +1,13 @@
 export interface TargetProfile {
   readonly id: string;
   readonly label: string;
+  /**
+   * "insert" rewrites the score with the chart in it. "flow" writes the chart
+   * as a document of its own, to be imported into a project the user already
+   * has open — the only option for an application whose engraving would be
+   * lost by re-importing the score.
+   */
+  readonly output: "insert" | "flow";
   /** Emit <staff-details print-object="no"> so chart staves vanish under the music. */
   readonly hideChartStavesAfterChart: boolean;
   /** Emit <print new-system="yes"> on the first measure of the music. */

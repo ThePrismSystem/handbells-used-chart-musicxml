@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
 
 import { DEFAULT_HEAD_MAPPING } from "../core/collect.js";
-import { loadFile, outputFilename, saveFile } from "../musicxml/container.js";
+import { chartFilename, loadFile, outputFilename, saveFile } from "../musicxml/container.js";
 import { parseScore } from "../musicxml/document.js";
 import { readScore } from "../musicxml/read.js";
-import { applyChart, defaultConventions, planFor } from "../pipeline.js";
+import { buildChart, defaultConventions, planFor } from "../pipeline.js";
+import DORICO_SETUP_LUA from "../targets/dorico-setup.lua?raw";
 
 import type { HeadMapping } from "../core/collect.js";
 import type { ChartPlan } from "../core/plan.js";
@@ -48,9 +49,20 @@ export interface ChartSession {
   assign: (notehead: string, assignment: Assignment) => void;
   setConvention: (partId: string, convention: OctaveConvention) => void;
   update: (settings: Partial<ChartSettings>) => void;
-  buildDownload: () => { filename: string; blob: Blob } | null;
+  buildDownloads: () => readonly ChartDownload[];
   reset: () => void;
 }
+
+export interface ChartDownload {
+  readonly filename: string;
+  readonly blob: Blob;
+  /** What the button says. */
+  readonly label: string;
+  /** One line telling the user what this file is for. */
+  readonly hint: string;
+}
+
+const SETUP_SCRIPT_NAME = "dorico-chart-setup.lua";
 
 interface Loaded {
   readonly source: LoadedFile;
@@ -124,20 +136,47 @@ export function useChartSession(): ChartSession {
     [loaded, options],
   );
 
-  const buildDownload = useCallback(() => {
+  const buildDownloads = useCallback((): readonly ChartDownload[] => {
     if (loaded === null || plan === null) {
-      return null;
+      return [];
     }
-    const xml = applyChart(loaded.parsed, plan, settings.targetId);
-    return {
-      filename: outputFilename(loaded.fileName),
-      blob: new Blob([new Uint8Array(saveFile(xml, loaded.source))], {
-        type:
-          loaded.source.kind === "mxl"
-            ? "application/vnd.recordare.musicxml"
-            : "application/vnd.recordare.musicxml+xml",
-      }),
-    };
+    const output = buildChart(loaded.parsed, plan, settings.targetId);
+    if (output === null) {
+      return [];
+    }
+
+    if (output.kind === "flow") {
+      // Two files, because the chart and the layout it needs travel by
+      // different routes: one is imported, the other is run.
+      return [
+        {
+          filename: chartFilename(loaded.fileName),
+          blob: new Blob([output.xml], { type: "application/vnd.recordare.musicxml+xml" }),
+          label: "Download the chart",
+          hint: "Import into your score as a new flow.",
+        },
+        {
+          filename: SETUP_SCRIPT_NAME,
+          blob: new Blob([DORICO_SETUP_LUA], { type: "text/plain" }),
+          label: "Download the setup script",
+          hint: "Run in Dorico once the chart is in.",
+        },
+      ];
+    }
+
+    return [
+      {
+        filename: outputFilename(loaded.fileName),
+        blob: new Blob([new Uint8Array(saveFile(output.xml, loaded.source))], {
+          type:
+            loaded.source.kind === "mxl"
+              ? "application/vnd.recordare.musicxml"
+              : "application/vnd.recordare.musicxml+xml",
+        }),
+        label: "Download the chart",
+        hint: "Your score with the chart added.",
+      },
+    ];
   }, [loaded, plan, settings.targetId]);
 
   return {
@@ -159,7 +198,7 @@ export function useChartSession(): ChartSession {
     update: useCallback((partial) => {
       setSettings((previous) => ({ ...previous, ...partial }));
     }, []),
-    buildDownload,
+    buildDownloads,
     reset: useCallback(() => {
       setLoaded(null);
       setError(null);

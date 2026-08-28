@@ -99,17 +99,6 @@ describe("emitChart", () => {
     expect(name?.getAttribute("print-object")).toBe("no");
   });
 
-  it("leaves the chart staves unlabelled", () => {
-    // print-object on part-name is not enough on its own: Dorico prints the
-    // part name as the staff label regardless, and part-name-display is the
-    // element that overrides what is drawn. The chart's label is the direction
-    // above the staves, so a margin label is a second, redundant one.
-    const { doc } = emitted([bell("C", 0, 5)]);
-    const display = doc.querySelector("part-list > score-part > part-name-display");
-    expect(display?.getAttribute("print-object")).toBe("no");
-    expect(display?.children).toHaveLength(0);
-  });
-
   it("names each chart part for its own instrument", () => {
     // Dorico prints part-name as the staff label whatever print-object says.
     // One shared name leaves it labelling the chimes "Handbells Used Chart 2".

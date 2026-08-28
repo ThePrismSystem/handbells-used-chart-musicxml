@@ -1,38 +1,16 @@
-import { addOctaves } from "../core/pitch.js";
-import { CHART_PART_NAME } from "../musicxml/marker.js";
-
+import {
+  BEAT_TYPE,
+  chartAttributes,
+  chartLabel,
+  chartMeasureContent,
+  chartScorePart,
+  invisibleBarline,
+} from "./chart.js";
 import { el } from "./elements.js";
 
 import type { TargetProfile } from "./types.js";
-import type { Column } from "../core/columns.js";
 import type { ChartPlan, ChartSection } from "../core/plan.js";
-import type { Alter, ChartKind } from "../core/types.js";
 import type { ExistingChart } from "../musicxml/marker.js";
-
-/** accidental-value has no "double-flat"; a double flat is "flat-flat". */
-const ACCIDENTAL: Record<Alter, string> = {
-  [-2]: "flat-flat",
-  [-1]: "flat",
-  [0]: "natural",
-  [1]: "sharp",
-  [2]: "double-sharp",
-};
-
-const INSTRUMENT_SOUND: Record<ChartKind, string> = {
-  bells: "pitched-percussion.handbells",
-  chimes: "pitched-percussion.handchimes",
-  // No standard sound exists for silver melody bells; they are handbells.
-  smbs: "pitched-percussion.handbells",
-};
-
-const INSTRUMENT_NAME: Record<ChartKind, string> = {
-  bells: "Handbells",
-  chimes: "Handchimes",
-  smbs: "Silver Melody Bells",
-};
-
-/** One column is one quarter, so the measure is `columns` quarters long. */
-const BEAT_TYPE = "4";
 
 function readDivisions(doc: Document): number {
   const text = doc.querySelector("score-partwise > part > measure > attributes > divisions");
@@ -48,166 +26,6 @@ function uniqueId(doc: Document, index: number): string {
     candidate = `HBC${String(index)}_${String(suffix)}`;
   }
   return candidate;
-}
-
-function scorePartFor(doc: Document, id: string, section: ChartSection): Element {
-  const scorePart = el(doc, "score-part", undefined, { id });
-  // The chart's visible label is a direction above the staves, not a margin
-  // name, so the part name is marked not to print. Dorico prints it anyway,
-  // which is why each kind's name is its own rather than one shared marker.
-  scorePart.append(el(doc, "part-name", CHART_PART_NAME[section.kind], { "print-object": "no" }));
-  // Dorico ignores print-object on part-name and prints it as the staff label
-  // anyway. part-name-display is the element that overrides what is drawn, and
-  // an empty one marked not to print leaves the chart staves unlabelled.
-  scorePart.append(el(doc, "part-name-display", undefined, { "print-object": "no" }));
-
-  const instrument = el(doc, "score-instrument", undefined, { id: `${id}-I1` });
-  instrument.append(el(doc, "instrument-name", INSTRUMENT_NAME[section.kind]));
-  instrument.append(el(doc, "instrument-sound", INSTRUMENT_SOUND[section.kind]));
-  scorePart.append(instrument);
-  return scorePart;
-}
-
-function clef(doc: Document, number: string, sign: string, line: string): Element {
-  const element = el(doc, "clef", undefined, { number });
-  element.append(el(doc, "sign", sign));
-  element.append(el(doc, "line", line));
-  // The 8va convention: written pitch sounds an octave higher.
-  element.append(el(doc, "clef-octave-change", "1"));
-  return element;
-}
-
-/** Order is fixed by the schema: divisions, key, time, staves, part-symbol, clef, staff-details, transpose. */
-function chartAttributes(
-  doc: Document,
-  section: ChartSection,
-  profile: TargetProfile,
-  divisions: number,
-  beats: number,
-): Element {
-  const attributes = el(doc, "attributes");
-  attributes.append(el(doc, "divisions", String(divisions)));
-
-  const key = el(doc, "key", undefined, { "print-object": "no" });
-  key.append(el(doc, "fifths", "0"));
-  attributes.append(key);
-
-  const time = el(doc, "time", undefined, { "print-object": "no" });
-  time.append(el(doc, "beats", String(beats)));
-  time.append(el(doc, "beat-type", BEAT_TYPE));
-  attributes.append(time);
-
-  attributes.append(el(doc, "staves", String(section.staves)));
-  if (section.staves === 2) {
-    attributes.append(el(doc, "part-symbol", "brace"));
-  }
-
-  attributes.append(clef(doc, "1", "G", "2"));
-  if (section.staves === 2) {
-    attributes.append(clef(doc, "2", "F", "4"));
-  }
-
-  if (profile.chartStaffSizePercent !== null) {
-    for (let staff = 1; staff <= section.staves; staff++) {
-      const details = el(doc, "staff-details", undefined, { number: String(staff) });
-      details.append(el(doc, "staff-size", String(profile.chartStaffSizePercent)));
-      attributes.append(details);
-    }
-  }
-
-  if (profile.octaveVia === "clef+transpose") {
-    const transpose = el(doc, "transpose");
-    transpose.append(el(doc, "diatonic", "0"));
-    transpose.append(el(doc, "chromatic", "0"));
-    transpose.append(el(doc, "octave-change", "1"));
-    attributes.append(transpose);
-  }
-
-  return attributes;
-}
-
-/** Order is fixed by the schema: chord, pitch, duration, voice, type, accidental, stem, notehead, staff. */
-function chartNote(
-  doc: Document,
-  section: ChartSection,
-  profile: TargetProfile,
-  column: Column,
-  staff: number,
-  divisions: number,
-): Element[] {
-  return column.map((entry, index) => {
-    const note = el(doc, "note");
-    if (index > 0) {
-      note.append(el(doc, "chord"));
-    }
-
-    // Under the 8va clef a bell is written an octave below its name — unless
-    // the target lowers the notehead by that clef itself, in which case the
-    // bell's own pitch is what lands in the right place. See writtenOctaveShift.
-    const written = addOctaves(entry.pitch, profile.writtenOctaveShift);
-    const pitch = el(doc, "pitch");
-    pitch.append(el(doc, "step", written.step));
-    if (written.alter !== 0) {
-      pitch.append(el(doc, "alter", String(written.alter)));
-    }
-    pitch.append(el(doc, "octave", String(written.octave)));
-    note.append(pitch);
-
-    note.append(el(doc, "duration", String(divisions)));
-    note.append(el(doc, "voice", String(staff)));
-    note.append(el(doc, "type", "quarter"));
-
-    // <accidental> has no print-object, so a natural is omitted rather than
-    // hidden: in MusicXML the element *is* the print instruction.
-    if (written.alter !== 0) {
-      note.append(el(doc, "accidental", ACCIDENTAL[written.alter]));
-    }
-
-    note.append(el(doc, "stem", "none"));
-    note.append(el(doc, "notehead", section.notehead, { color: section.color }));
-    note.append(el(doc, "staff", String(staff)));
-    return note;
-  });
-}
-
-function paddingRest(doc: Document, staff: number, divisions: number): Element {
-  const note = el(doc, "note", undefined, { "print-object": "no" });
-  note.append(el(doc, "rest"));
-  note.append(el(doc, "duration", String(divisions)));
-  note.append(el(doc, "voice", String(staff)));
-  note.append(el(doc, "type", "quarter"));
-  note.append(el(doc, "staff", String(staff)));
-  return note;
-}
-
-function staffContent(
-  doc: Document,
-  section: ChartSection,
-  profile: TargetProfile,
-  columns: readonly Column[],
-  staff: number,
-  from: number,
-  count: number,
-  divisions: number,
-): Element[] {
-  const out: Element[] = [];
-  for (let index = 0; index < count; index++) {
-    const column = columns[from + index];
-    if (column === undefined || column.length === 0) {
-      out.push(paddingRest(doc, staff, divisions));
-    } else {
-      out.push(...chartNote(doc, section, profile, column, staff, divisions));
-    }
-  }
-  return out;
-}
-
-function label(doc: Document, text: string): Element {
-  const direction = el(doc, "direction", undefined, { placement: "above" });
-  const type = el(doc, "direction-type");
-  type.append(el(doc, "words", text));
-  direction.append(type);
-  return direction;
 }
 
 function chartMeasure(
@@ -228,44 +46,17 @@ function chartMeasure(
   });
 
   if (index === 0) {
-    measure.append(chartAttributes(doc, section, profile, divisions, count));
-    measure.append(label(doc, section.label));
+    measure.append(
+      chartAttributes(doc, section, profile, divisions, { kind: "counted", beats: count }),
+    );
+    measure.append(chartLabel(doc, section.label));
   }
 
-  for (const note of staffContent(
-    doc,
-    section,
-    profile,
-    section.treble,
-    1,
-    from,
-    count,
-    divisions,
-  )) {
-    measure.append(note);
+  for (const node of chartMeasureContent(doc, section, profile, divisions, from, count)) {
+    measure.append(node);
   }
 
-  if (section.staves === 2) {
-    const backup = el(doc, "backup");
-    backup.append(el(doc, "duration", String(count * divisions)));
-    measure.append(backup);
-    for (const note of staffContent(
-      doc,
-      section,
-      profile,
-      section.bass,
-      2,
-      from,
-      count,
-      divisions,
-    )) {
-      measure.append(note);
-    }
-  }
-
-  const barline = el(doc, "barline", undefined, { location: "right" });
-  barline.append(el(doc, "bar-style", "none"));
-  measure.append(barline);
+  measure.append(invisibleBarline(doc));
   return measure;
 }
 
@@ -329,9 +120,7 @@ function silentMeasure(
   note.append(el(doc, "voice", "1"));
   measure.append(note);
 
-  const barline = el(doc, "barline", undefined, { location: "right" });
-  barline.append(el(doc, "bar-style", "none"));
-  measure.append(barline);
+  measure.append(invisibleBarline(doc));
   return measure;
 }
 
@@ -387,9 +176,7 @@ function silentTail(
   note.append(el(doc, "voice", "1"));
   measure.append(note);
 
-  const barline = el(doc, "barline", undefined, { location: "right" });
-  barline.append(el(doc, "bar-style", "none"));
-  measure.append(barline);
+  measure.append(invisibleBarline(doc));
   return measure;
 }
 
@@ -448,7 +235,7 @@ export function emitChart(doc: Document, plan: ChartPlan, profile: TargetProfile
     const id = uniqueId(doc, sectionIndex + 1);
     partIds.push(id);
 
-    partList.insertBefore(scorePartFor(doc, id, section), firstScorePart);
+    partList.insertBefore(chartScorePart(doc, id, section), firstScorePart);
 
     const part = el(doc, "part", undefined, { id });
     for (let index = 0; index < measureCount; index++) {

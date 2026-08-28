@@ -1,4 +1,4 @@
-import { DownloadButton } from "./DownloadButton.js";
+import { Downloads } from "./Downloads.js";
 import { DropZone } from "./DropZone.js";
 import { NoteheadTable } from "./NoteheadTable.js";
 import { OptionsPanel } from "./OptionsPanel.js";
@@ -20,7 +20,7 @@ export function App() {
     assign,
     setConvention,
     update,
-    buildDownload,
+    buildDownloads,
     reset,
   } = useChartSession();
 
@@ -75,7 +75,7 @@ export function App() {
 
       <footer className="controls">
         <DropZone onFile={handleFile} />
-        {status === "ready" && plan !== null && <DownloadButton buildDownload={buildDownload} />}
+        {status === "ready" && plan !== null && <Downloads buildDownloads={buildDownloads} />}
       </footer>
     </div>
   );

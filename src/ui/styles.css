@@ -195,6 +195,32 @@ body {
   gap: 0.25rem;
 }
 
+/* Downloads: one column per file, each captioned with what it is for. A target
+   that inserts hands over one; Dorico hands over the chart and its script. */
+.downloads {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.download {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.375rem;
+}
+
+.download .hint {
+  margin: 0;
+  max-width: 22ch;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
 .file-field {
   border: 1px dashed transparent;
   padding: 0.25rem;
@@ -235,7 +261,8 @@ button.primary {
   border: 1px solid var(--accent);
 }
 
-.warning button {
+.warning button,
+.download button:not(.primary) {
   background: transparent;
   color: var(--ink);
   border: 1px solid var(--control-border);

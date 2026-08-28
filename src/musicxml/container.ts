@@ -12,6 +12,7 @@ export interface LoadedFile {
 const MIMETYPE = "application/vnd.recordare.musicxml";
 const CONTAINER_PATH = "META-INF/container.xml";
 const SUFFIX = "-with-chart";
+const CHART_SUFFIX = "-chart";
 
 /** Local file header signature: "PK\x03\x04". */
 function isZip(bytes: Uint8Array): boolean {
@@ -81,10 +82,22 @@ export function saveFile(xml: string, source: LoadedFile): Uint8Array {
   });
 }
 
-export function outputFilename(inputName: string): string {
+function suffixed(inputName: string, suffix: string, extension?: string): string {
   const dot = inputName.lastIndexOf(".");
-  if (dot <= 0) {
-    return `${inputName}${SUFFIX}`;
-  }
-  return `${inputName.slice(0, dot)}${SUFFIX}${inputName.slice(dot)}`;
+  // A leading dot is part of the name, not an extension, so only a dot past
+  // the first character separates one.
+  const stem = dot <= 0 ? inputName : inputName.slice(0, dot);
+  return `${stem}${suffix}${extension ?? (dot <= 0 ? "" : inputName.slice(dot))}`;
+}
+
+export function outputFilename(inputName: string): string {
+  return suffixed(inputName, SUFFIX);
+}
+
+/**
+ * The chart travels on its own, so it is always plain MusicXML: it is a new
+ * file rather than the user's, and there is nothing in it worth zipping.
+ */
+export function chartFilename(inputName: string): string {
+  return suffixed(inputName, CHART_SUFFIX, ".musicxml");
 }
